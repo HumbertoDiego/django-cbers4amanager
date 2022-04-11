@@ -20,6 +20,8 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
   > 'django.contrib.gis',
   >  ...
   > ]
+
+
   > DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
