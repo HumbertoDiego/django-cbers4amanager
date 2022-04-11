@@ -15,11 +15,11 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
 * Django
   * sudo apt install python3-django
   * Editar settings.py
-  > INSTALLED_APPS = [
-  > 'cbers4amanager.apps.Cbers4AmanagerConfig',
-  > 'django.contrib.gis',
-  >  ...
-  > ]
+  ``` INSTALLED_APPS = [
+    'cbers4amanager.apps.Cbers4AmanagerConfig',
+    'django.contrib.gis',
+     ...
+    ]```
 
 
   > DATABASES = {
