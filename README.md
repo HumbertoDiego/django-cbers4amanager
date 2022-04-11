@@ -6,7 +6,7 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
   * apt install postgresql postgis
   * su postgresl
   * psql
-  * postgres=# \password -- Alterar o arquivo setting.py com esta senha
+  * postgres=# \password -- Alterar o arquivo setting.py com esta senha -> PASSWORD
   * postgres=# CREATE DATABASE cbers4a;
   * postgres=# \c cbers4a
   * cbers4a=# CREATE EXTENSION postgis; 
@@ -27,7 +27,7 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'cbers4a',
         'USER': 'postgres',
-        'PASSWORD': '4cgeosdt',
+        'PASSWORD': 'PASSWORD',
         'HOST': 'localhost',
         'PORT': '5432'
     }
