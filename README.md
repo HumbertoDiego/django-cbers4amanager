@@ -14,7 +14,5 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
   * cbers4a=# CREATE EXTENSION postgis_sfcgal; 
 * Django
   * sudo apt install python3-django
-  * python3 manage.py createsuperuser
 
-
-
+## Fluxo de tabalho
