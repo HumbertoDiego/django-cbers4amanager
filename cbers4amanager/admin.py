@@ -12,8 +12,8 @@ from process.models import Process, Job, Task
 import os
 from django.core.files.base import ContentFile
 from django.utils import timezone
-
-
+from django.db.models.functions import Concat
+from django.db.models import CharField, Value as V
 ################ INOM ##################
 class JsonImportForm(forms.Form):
     file = forms.FileField()
@@ -180,7 +180,7 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
             # create Genere object from passed in data
             caminho = request.POST["caminho"]
             onlytifsfiles = [f for f in os.listdir(caminho) if os.path.isfile(os.path.join(caminho, f)) and f.split(".")[-1] in ["tif","TIF","tiff","TIFF"]] 
-            count = 0 or len(onlytifsfiles)
+            a,m = 0,0
             # 1) Encontrar se já existe a intenção de download desse arquivo com mesmo nome
             for f in onlytifsfiles:
                 fullfname = os.path.join(caminho,f)
@@ -193,6 +193,7 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
                     d.finalizado=True
                     d.progresso="100 %"
                     d.save()
+                    m+=1
                 except:
                     nome_base = f.split("_BAND")[0]
                     tipo = "red" if "BAND3" in f else "green" if "BAND2" in f else "blue" if "BAND1" in f else "pan" if "BAND0" in f else ""
@@ -207,12 +208,13 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
                         d.content_length = size
                     try:
                         d.save()
+                        a+=1
                     except Exception as e:
                         print(str(e))
                         continue
 
             self.message_user(request,
-             "Adicionados %s registros dos arquivos .tifs encontrados em %s"%(str(count),caminho))
+             "Adicionados/Modificados/Encontrados (%s/%s/%s) registros de arquivos .tifs em %s"%(a,m,len(onlytifsfiles),caminho))
             return redirect("..")
         form = TextForm()
         payload = {"form": form,'opts': self.model._meta,}
@@ -220,13 +222,48 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
             request, "admin/pasta_local_tiffs_form.html", payload
         )
 
-
-
 admin.site.register(Download,MyOSMGeoAdmin)
 
 
 ################ ComposicaoRGB ##################
-admin.site.register(ComposicaoRGB)
+
+from django.db.models.aggregates import Aggregate
+
+class PostgreSQLGroupConcat(Aggregate):
+    template = "array_to_string(array_agg(%(expressions)s), ',') "
+    #template = '%(function)s(%(distinct)s %(expression)s)'
+    def __init__(self, expression, **extra):
+        super().__init__(expression, output_field=CharField(), **extra)
+
+class MyComposicaoRGBadmin(admin.ModelAdmin):
+    search_fields = ['rgb']
+    change_list_template = "cbers4amanager/composicaorgb_changelist.html"
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('get-downloads/', self.get_downloads),
+        ]
+        return my_urls + urls
+    def get_downloads(self, request):
+        queryset = Download.objects.filter(finalizado=True).values("nome_base").annotate(downloads=PostgreSQLGroupConcat('nome'))
+        #print(queryset.query)
+        agrupamento = {}
+        for object in queryset.all():
+            object.downloads.split(",")
+        if request.method == "POST":
+            # create Genere object from passed in data
+            
+            self.message_user(request, "Adicionados %s"%(str(request.POST)))
+            return redirect("..")
+        form = CsvImportForm()
+        payload = {'queryset':queryset,'opts': self.model._meta,}
+        return render(
+            request, "admin/get_downloads_form.html", payload
+        )
+
+
+
+admin.site.register(ComposicaoRGB,MyComposicaoRGBadmin)
 
 admin.site.register(INOMClippered)
 admin.site.register(Pansharpened)
