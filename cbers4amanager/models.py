@@ -23,7 +23,7 @@ class Download(models.Model):
     terminado_em = models.DateTimeField(blank=True, null=True )
     content_length = models.BigIntegerField(blank=True, null=True )
     progresso = models.CharField(max_length=10,blank=True, null=True )
-    arquivo = models.FileField(upload_to='uploads/',blank=True, null=True )
+    arquivo = models.FileField(upload_to='bandas/',blank=True, null=True )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
         return str(self.nome)
@@ -36,6 +36,8 @@ class ComposicaoRGB(models.Model):
     rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'rgb'),blank=True, null=True )
     def __str__(self):
         return str(self.rgb)
+    class Meta:
+        verbose_name = ["2) Composição RGB"]
 
 # 3) Cortar dentro dos INOMs 1:25k as composições RGB e a banda PAN
 class INOMClippered(models.Model):
