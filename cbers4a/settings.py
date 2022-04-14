@@ -97,8 +97,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'cbers4a',
-        'USER': 'postgres',
-        'PASSWORD': '4cgeosdt',
+        'USER': '${{ secrets.USERNAME_POST }}',
+        'PASSWORD': '${{ secrets.PASSWORD_POST }}',
         'HOST': 'localhost',
         'PORT': '5432'
     }
