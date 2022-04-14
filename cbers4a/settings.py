@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 from pathlib import Path
-
+from secrets import USERNAME_POST,PASSWORD_POST
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -97,8 +97,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'cbers4a',
-        'USER': '${{ secrets.USERNAME_POST }}',
-        'PASSWORD': '${{ secrets.PASSWORD_POST }}',
+        'USER': USERNAME_POST,
+        'PASSWORD': PASSWORD_POST,
         'HOST': 'localhost',
         'PORT': '5432'
     }
