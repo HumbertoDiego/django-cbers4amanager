@@ -4,9 +4,9 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
 ## Requisitos
 * PostgreSQL: 
   * apt install postgresql postgis
-  * su postgresl
+  * su USERNAME_POST # Alterar o arquivo settings.py com este username
   * psql
-  * postgres=# \password -- Alterar o arquivo setting.py com esta senha -> PASSWORD
+  * postgres=# \password -- Alterar o arquivo settings.py com esta senha -> PASSWORD_POST
   * postgres=# CREATE DATABASE cbers4a;
   * postgres=# \c cbers4a
   * cbers4a=# CREATE EXTENSION postgis; 
