@@ -12,8 +12,8 @@ from process.models import Process, Job, Task
 import os
 from django.core.files.base import ContentFile
 from django.utils import timezone
-from django.db.models.functions import Concat
-from django.db.models import CharField, Value as V
+from django.db.models import CharField
+from django.contrib.gis.gdal import GDALRaster
 ################ INOM ##################
 class JsonImportForm(forms.Form):
     file = forms.FileField()
@@ -70,6 +70,10 @@ admin.site.register(INOM,MyOSMGeoAdminv2)
 def set_finalizado(modeladmin, request, queryset):
     queryset.update(finalizado=True)
 
+@admin.action(description='Update finalizado=False das linhas selecionadas')
+def set_nao_finalizado(modeladmin, request, queryset):
+    queryset.update(finalizado=False)
+
 @admin.action(description='Update name, base_name e tipo de acordo com a url')
 def set_names(modeladmin, request, queryset):
     for e in queryset:
@@ -79,13 +83,27 @@ def set_names(modeladmin, request, queryset):
         e.tipo = "red" if "BAND3" in e.nome else "green" if "BAND2" in e.nome else "blue" if "BAND1" in e.nome else "pan" if "BAND0" in e.nome else "" 
         e.save()
 
+@admin.action(description='Update limites (após download)')
+def set_bounds(modeladmin, request, queryset):
+    for e in queryset:
+        fpath=os.path.join(os.getcwd(),'uploads/bandas',e.nome)
+        rst = GDALRaster(fpath, write=False)
+        xmin, ymin, xmax, ymax = rst.extent
+        pol = 'POLYGON(({xmin} {ymin},{xmax} {ymin},{xmax} {ymax},{xmin} {ymax},{xmin} {ymin}))'.format(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
+        print(pol)
+        poly = GEOSGeometry(pol,srid=rst.srid)
+        e.bounds = poly
+        e.save()
+
+
+
 class CsvImportForm(forms.Form):
     file = forms.FileField()
 class TextForm(forms.Form):
     caminho = forms.CharField()
 
 class MyOSMGeoAdmin(OSMGeoAdmin):
-    actions = [set_finalizado,set_names,'comecar_download']
+    actions = [set_finalizado,set_nao_finalizado,set_names,'comecar_download',set_bounds]
     list_display = ('nome', 'tipo', 'iniciado_em','_content_length','progresso','terminado_em','finalizado')
     search_fields = ['nome', 'tipo' ]
     change_list_template = "cbers4amanager/download_changelist.html"
@@ -93,19 +111,26 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
     def _content_length(self, obj):
         if not obj.content_length:
             retorno = "-"
-        elif obj.content_length<=1001:
+        elif obj.content_length<=1000:
             retorno = str(obj.content_length)+" B"
-        elif obj.content_length>1001 and obj.content_length<1000000 :
+        elif 1000< obj.content_length<=1000000 :
             retorno = "{:.2f}".format(obj.content_length/1000.0)+" Kb"
-        else:
+        elif 1000000< obj.content_length<=1000000000 :
             retorno = "{:.2f}".format(obj.content_length/1000000.0)+" Mb"
+        else:
+            retorno = "{:.2f}".format(obj.content_length/1000000000.0)+" Gb"
         return retorno
     @admin.action(description='Começar Download')
     def comecar_download(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
             aux = [str(q.pk) for q in queryset]
             # TODO: Proteger aqui
-            process = Process.objects.all()[0]
+            try:
+                process = Process.objects.get(name="Download")
+            except:
+                process = Process(name="Download",description="Todo minuto",run_if_err=True,
+                                minute="*",hour="*",day_of_month="*",month="*",day_of_week="*")
+                process.save()
             # DONE: Verificar se o id já está em description de um Task ativo
             ids = []
             for i in range(len(aux)):
@@ -116,12 +141,14 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
                     # Não existe ativo, então cria outro
                     ids.append(aux[i])
                     continue
-            next_id = Task.objects.order_by('-id').first().id + 1
-            t = Task.objects.get(pk=1)
-            t.pk = None
-            t.name = "Download "+str(next_id)
-            t.description = "Download dos itens: %s"%(ids)
-            t.arguments = " ".join(ids)
+            last = Task.objects.order_by('-id').first()
+            next_id = last.id + 1 if last else 1
+            t = Task(process=process,name="Download "+str(next_id), description= "Download dos itens: %s"%(ids),
+                    interpreter= os.popen('which python3').read().replace('\n',''),
+                    arguments = " ".join(ids))
+            path = os.path.join(os.getcwd(),'cbers4amanager/management/download_cbers4a.py')
+            with open(path, "rb") as py:
+                t.code= ContentFile(py.read(), name=os.path.basename(path))
             try:
                 t.save()
                 self.message_user(request,
