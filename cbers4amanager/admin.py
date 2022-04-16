@@ -1,3 +1,4 @@
+from telnetlib import DO
 from django.contrib import admin
 from django.contrib.gis.admin import OSMGeoAdmin
 from .models import INOM, Download, ComposicaoRGB, INOMClippered, Pansharpened
@@ -14,12 +15,15 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.db.models import CharField
 from django.contrib.gis.gdal import GDALRaster
+from django.db.models.aggregates import Aggregate
+from django.utils.html import mark_safe
 ################ INOM ##################
 class JsonImportForm(forms.Form):
     file = forms.FileField()
 
 class MyOSMGeoAdminv2(OSMGeoAdmin):
     actions = []
+    list_display = ('inom', 'mi')
     change_list_template = "cbers4amanager/inom_changelist.html"
     def get_urls(self):
         urls = super().get_urls()
@@ -38,6 +42,7 @@ class MyOSMGeoAdminv2(OSMGeoAdmin):
             count = 0
             for feature in features:
                 inom = feature['properties'].get('inom','')
+                mi = feature['properties'].get('mi','')
                 if not inom:
                     print("Feição sem a coluna inom! pulando.")
                     continue
@@ -49,17 +54,17 @@ class MyOSMGeoAdminv2(OSMGeoAdmin):
                 elif pol.geom_type!="Polygon":
                     print("Geometria %s diferente de Poligonos! pulando %s."%(pol.geom_type,inom))
                     continue
-                i = INOM(inom=inom, bounds=pol)
+                i = INOM(inom=inom, mi=mi, bounds=pol)
                 try:
                     i.save()
                 except IntegrityError as e:
-                    print(e.message)
+                    print(str(e))
                     continue
                 count+=1
             self.message_user(request, "Adicionados %s registros"%(str(count)))
             return redirect("..")
         form = JsonImportForm()
-        payload = {"form": form}
+        payload = {"form": form,'opts': self.model._meta,}
         return render(
             request, "admin/upload_form.html", payload
         )
@@ -94,8 +99,6 @@ def set_bounds(modeladmin, request, queryset):
         poly = GEOSGeometry(pol,srid=rst.srid)
         e.bounds = poly
         e.save()
-
-
 
 class CsvImportForm(forms.Form):
     file = forms.FileField()
@@ -135,7 +138,7 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
             ids = []
             for i in range(len(aux)):
                 try:
-                    q = Task.objects.get(description__contains="'"+aux[i]+"'")
+                    q = Task.objects.filter(process=process).get(description__contains="'"+aux[i]+"'")
                     # Existe ativo, então não cria outro
                 except Task.DoesNotExist as e:
                     # Não existe ativo, então cria outro
@@ -254,8 +257,6 @@ admin.site.register(Download,MyOSMGeoAdmin)
 
 ################ ComposicaoRGB ##################
 
-from django.db.models.aggregates import Aggregate
-
 class PostgreSQLGroupConcat(Aggregate):
     template = "array_to_string(array_agg(%(expressions)s), ',') "
     #template = '%(function)s(%(distinct)s %(expression)s)'
@@ -263,7 +264,10 @@ class PostgreSQLGroupConcat(Aggregate):
         super().__init__(expression, output_field=CharField(), **extra)
 
 class MyComposicaoRGBadmin(admin.ModelAdmin):
+    actions = ['comecar_composicao']
     search_fields = ['rgb']
+    list_display = ('__str__', 'finalizado')
+
     change_list_template = "cbers4amanager/composicaorgb_changelist.html"
     def get_urls(self):
         urls = super().get_urls()
@@ -274,24 +278,179 @@ class MyComposicaoRGBadmin(admin.ModelAdmin):
     def get_downloads(self, request):
         queryset = Download.objects.filter(finalizado=True).values("nome_base").annotate(downloads=PostgreSQLGroupConcat('nome'))
         #print(queryset.query)
-        agrupamento = {}
+        agrupamento = []
         for object in queryset.all():
-            object.downloads.split(",")
+            print(object)
+            if not ComposicaoRGB.objects.filter(nome_base=object['nome_base']):
+                bandas = {}
+                for nome in object['downloads'].split(","):
+                    if "BAND3" in nome:
+                        bandas['red']=('style=color:red',nome)
+                for nome in object['downloads'].split(","):
+                    if "BAND2" in nome:
+                        bandas['green']=('style=color:green',nome)
+                for nome in object['downloads'].split(","):
+                    if "BAND1" in nome:
+                        bandas['blue']=('style=color:blue',nome)
+                agrupamento.append(bandas)
         if request.method == "POST":
             # create Genere object from passed in data
-            
-            self.message_user(request, "Adicionados %s"%(str(request.POST)))
+            for bandas in agrupamento:
+                red = Download.objects.get(nome=bandas['red'][1])
+                green = Download.objects.get(nome=bandas['green'][1])
+                blue = Download.objects.get(nome=bandas['blue'][1])
+                rgb = ComposicaoRGB(red=red, green=green, blue=blue)
+                rgb.nome_base = red.nome_base or green.nome_base or blue.nome_base
+                rgb.save()
+            self.message_user(request, "Adicionados %s registros"%(len(agrupamento)))
             return redirect("..")
-        form = CsvImportForm()
-        payload = {'queryset':queryset,'opts': self.model._meta,}
+        payload = {'queryset':queryset,'opts': self.model._meta,'agrupamento':agrupamento}
         return render(
             request, "admin/get_downloads_form.html", payload
         )
-
-
+    @admin.action(description='Começar Composição das linhas selecionadas')
+    def comecar_composicao(self, request, queryset):
+        if request.method=='POST' and "confirmation" in request.POST:
+            aux = [str(q.pk) for q in queryset]
+            print(aux)
+            try:
+                process = Process.objects.get(name="Composição")
+            except:
+                process = Process(name="Composição",description="Toda hora",run_if_err=True,
+                                minute="1",hour="*",day_of_month="*",month="*",day_of_week="*")
+                process.save()
+            # DONE: Verificar se o id já está em description de um Task ativo
+            ids = []
+            for i in range(len(aux)):
+                try:
+                    q = Task.objects.filter(process=process).get(description__contains="'"+aux[i]+"'")
+                    # Existe ativo, então não cria outro
+                except Task.DoesNotExist as e:
+                    # Não existe ativo, então cria outro
+                    ids.append(aux[i])
+                    continue
+            last = Task.objects.order_by('-id').first()
+            next_id = last.id + 1 if last else 1
+            t = Task(process=process,name="Composição "+str(next_id), description= "Composição dos itens: %s"%(ids),
+                    interpreter= os.popen('which python3').read().replace('\n',''),
+                    arguments = " ".join(ids))
+            path = os.path.join(os.getcwd(),'cbers4amanager/management/composicaorgb_cbers4a.py')
+            with open(path, "rb") as py:
+                t.code= ContentFile(py.read(), name=os.path.basename(path))
+            try:
+                t.save()
+                self.message_user(request,
+                                    "Composição de %s iniciada."%(ids), 
+                                    messages.SUCCESS)
+            except IntegrityError as e:
+                self.message_user(request,
+                                    "Processo já existe. Reiniciando...", 
+                                    messages.WARNING)
+                pass
+            job, tasks = Job.create(process)
+        else:
+            request.current_app = self.admin_site.name
+            context = {
+                'action':request.POST.get("action"),
+                'queryset':queryset,
+                'opts': self.model._meta,
+                'tarefa': "COMPOSICAO"
+            } 
+            return render(request, "admin/composicao_confirmation.html", context)
 
 admin.site.register(ComposicaoRGB,MyComposicaoRGBadmin)
 
-admin.site.register(INOMClippered)
+class MyINOMClipperedadmin(admin.ModelAdmin):
+    actions = ['comecar_recortes_rgb','comecar_recortes_pan']
+    search_fields = ['nome']
+    list_display = ('nome', '_recorte_rgb', '_recorte_pan', 'cobertura_nuvens', 'finalizado')
+    change_list_template = "cbers4amanager/inomclippered_changelist.html"
+    def _recorte_rgb(self,obj):
+        if not obj.recorte_rgb:
+            retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
+        else:
+            retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
+        return retorno
+    def _recorte_pan(self,obj):
+        if not obj.recorte_pancromatica:
+            retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
+        else:
+            retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
+        return retorno
+    def render_change_form(self, request, context, *args, **kwargs):
+         context['adminform'].form.fields['pancromatica'].queryset = Download.objects.filter(nome__contains='BAND0')
+         return super(MyINOMClipperedadmin, self).render_change_form(request, context, *args, **kwargs)
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('get-composicao/', self.get_composicao),
+        ]
+        return my_urls + urls
+    def getIntersection(self, comprgb):
+        rst = GDALRaster(comprgb.rgb, write=False)
+        xmin, ymin, xmax, ymax = rst.extent
+        pol = 'POLYGON(({xmin} {ymin},{xmax} {ymin},{xmax} {ymax},{xmin} {ymax},{xmin} {ymin}))'.format(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
+        poly = GEOSGeometry(pol,srid=rst.srid)
+        queryset = INOM.objects.filter(bounds__intersects=poly)
+        return queryset
+    def get_composicao(self, request):
+        rgbs_ja_registrados_para_recorte = INOMClippered.objects.values('rgb').all()
+        n_registrar_esses_ids = list(set([i['rgb'] for i in rgbs_ja_registrados_para_recorte]))
+        queryset = ComposicaoRGB.objects.filter(finalizado=True).exclude(id__in=n_registrar_esses_ids)
+        if request.method == "POST":
+            # create Genere object from passed in data
+            count = 0
+            for comprgb in queryset.all():
+                inoms = self.getIntersection(comprgb)
+                for inom in inoms.all():
+                    if not INOMClippered.objects.filter(nome=comprgb.nome_base+"_"+inom.inom):
+                        i = INOMClippered(nome=comprgb.nome_base+"_"+inom.inom,inom=inom,rgb=comprgb)
+                        try:
+                            i.pancromatica = Download.objects.get(nome_base__iexact=comprgb.nome_base,tipo='pan')
+                        except:
+                            pass
+                        i.save()
+                        count+=1
+            self.message_user(request, "Adicionados %s registros"%(count))
+            return redirect("..")
+        payload = {'queryset':queryset,'opts': self.model._meta}
+        return render(
+            request, "admin/get_composicoes_form.html", payload
+        )
+    @admin.action(description='Começar Recortes RGB das linhas selecionadas')
+    def comecar_recortes_rgb(self, request, queryset):
+        if request.method=='POST' and "confirmation" in request.POST:
+
+            self.message_user(request, "Adicionados %s registros"%(queryset))
+        else:
+            request.current_app = self.admin_site.name
+            context = {
+                'action':request.POST.get("action"),
+                'queryset':queryset,
+                'opts': self.model._meta,
+                'tarefa': "RECORTE"
+            } 
+            return render(request, "admin/recorte_confirmation.html", context)
+    @admin.action(description='Começar Recortes PAN das linhas selecionadas')
+    def comecar_recortes_pan(self, request, queryset):
+        if request.method=='POST' and "confirmation" in request.POST:
+            self.message_user(request, "Adicionados %s registros"%(queryset))
+        else:
+            request.current_app = self.admin_site.name
+            context = {
+                'action':request.POST.get("action"),
+                'queryset':queryset,
+                'opts': self.model._meta,
+                'tarefa': "COMPOSICAO"
+            } 
+            return render(request, "admin/recorte_confirmation.html", context)
+    
+admin.site.register(INOMClippered,MyINOMClipperedadmin)
+
+
+
+
+
+
 admin.site.register(Pansharpened)
 

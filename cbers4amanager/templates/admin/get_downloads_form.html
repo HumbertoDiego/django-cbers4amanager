@@ -14,13 +14,16 @@
 {% endblock %}
 
 {% block content %}
+{% if agrupamento %}
   <p>Tem certeza que deseja adicionar os seguintes itens?</p>
   <ul style="padding: 0">
-    {% for object in queryset.all %}
-      <li >
-        {{ object.downloads }}
-      </li>
-    {% endfor %}
+      {% for bandas in agrupamento %}
+        <li >
+          {% for k,v in bandas.items %}
+          <strong {{v.0}} >{{ k.upper }}</strong>: {{v.1}}<br>
+          {% endfor %}
+        </li>
+      {% endfor %}
   </ul>
   <hr>
   <br>
@@ -37,5 +40,14 @@
          class="button cancel-link">{% trans "Não, me leve de volta" %}</a>
     </div>
   </form>
+  {% else %}
+  <p>Não foi encontrado Downloads das 3 bandas finalizados novos!</p>
+  <hr>
+  <br>
+  <form>
+    <a href="#" onclick="atras()" class="button cancel-link">{% trans "Me leve de volta" %}</a>
+  </form>
+  {% endif %}
+ 
   <script>function atras(){window.history.back(); return false;}</script>
 {% endblock %}
