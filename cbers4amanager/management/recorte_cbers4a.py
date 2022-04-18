@@ -25,11 +25,12 @@ def getAreaUtil(fname):
     print(comando)
     json_str = os.popen(comando).read()
     dic = json.loads(json_str)
-    statistics_valid_percent = min([round(float(i['metadata']['']['STATISTICS_VALID_PERCENT']),2) for i in dic['bands']])
+    statistics_valid_percent = round(min([float(i['metadata']['']['STATISTICS_VALID_PERCENT']) for i in dic['bands']]),2)
     try:
         maximos = [int(i['metadata']['']['STATISTICS_MAXIMUM']) for i in dic['bands']]
     except KeyError:
         maximos = []
+    print(statistics_valid_percent)
     return statistics_valid_percent, maximos
 
 def getNuvens(fname,m):
@@ -37,12 +38,15 @@ def getNuvens(fname,m):
     new_file_name = file_name+"_NUVENS"+file_extension
     out = os.path.join(settings.MEDIA_ROOT,'nuvens',new_file_name)
     mred,mgreen,mblue = m[0:3]
-    f = 0.7
+    f = 0.5
+    fdelta= 0.0005
     comando = "gdal_calc.py -A {fname} --A_band=1 -B {fname} --B_band=2 -C {fname} --C_band=3 "
+    comando += "--calc='((A-B)<{delta})*((C-A)<{delta})*((B-C)<{delta})' "
+    #TODO
     #comando += "--calc='(A>{r})*(B>{g})*(C>{b})' "
-    comando += "--calc='A+B+C>{soma}' "
-    comando += "--outfile {out} --overwrite --co NBITS=1 --type Byte --NoDataValue 0"
-    comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),out=out)
+    #comando += "--calc='A+B+C>{soma}' "       --co NBITS=1 --type Byte   
+    comando += " --outfile {out} --overwrite  --NoDataValue 0"
+    comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),delta=fdelta*sum(m),out=out)
     print(comando)
     os.system(comando)
     return out
@@ -54,7 +58,7 @@ def main(pks,final_do_nome):
         except Exception as e:
             print(e)
             continue
-        if rec.finalizado: continue
+        #if rec.finalizado: continue
         out = os.path.join(settings.MEDIA_ROOT,'recortes',rec.nome+final_do_nome)
         clipper = rec.inom.bounds
         # Tenho que converter a area de recorte par aomesmo src do recortado
@@ -70,6 +74,7 @@ def main(pks,final_do_nome):
         print(comando)
         os.system(comando)
         if "RGB" in final_do_nome:
+            # TODO: Ver  se o recorte deu certo
             rec.recorte_rgb = out
         else: 
             rec.recorte_pancromatica = out

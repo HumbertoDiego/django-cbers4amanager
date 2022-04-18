@@ -27,7 +27,7 @@ class MySelectWithDownloadWidget(forms.widgets.Select):
 class JsonImportForm(forms.Form):
     file = forms.FileField()
 
-class MyOSMGeoAdminv2(OSMGeoAdmin):
+class MyInomAdmin(OSMGeoAdmin):
     actions = []
     list_display = ('inom', 'mi')
     change_list_template = "cbers4amanager/inom_changelist.html"
@@ -74,7 +74,7 @@ class MyOSMGeoAdminv2(OSMGeoAdmin):
         return render(
             request, "admin/upload_form.html", payload
         )
-admin.site.register(INOM,MyOSMGeoAdminv2)
+admin.site.register(INOM,MyInomAdmin)
 
 ################ Download ##################
 @admin.action(description='Update finalizado=True das linhas selecionadas')
@@ -91,7 +91,7 @@ def set_names(modeladmin, request, queryset):
         linha = e.url
         e.nome = linha.split("/")[-1].split("?")[0]
         e.nome_base = e.nome.split("_BAND")[0]
-        e.tipo = "red" if "BAND3" in e.nome else "green" if "BAND2" in e.nome else "blue" if "BAND1" in e.nome else "pan" if "BAND0" in e.nome else "" 
+        e.tipo = "red" if "BAND3" in e.nome else "green" if "BAND2" in e.nome else "blue" if "BAND1" in e.nome else "pan" if "BAND0" in e.nome else "nir" if "BAND4" in e.nome else "" 
         e.save()
 
 @admin.action(description='Update limites (após download)')
@@ -111,7 +111,7 @@ class CsvImportForm(forms.Form):
 class TextForm(forms.Form):
     caminho = forms.CharField()
 
-class MyOSMGeoAdmin(OSMGeoAdmin):
+class MyDownloadAdmin(OSMGeoAdmin):
     actions = [set_finalizado,set_nao_finalizado,set_names,'comecar_download',set_bounds]
     list_display = ('nome', 'tipo', 'iniciado_em','_content_length','progresso','terminado_em','finalizado')
     search_fields = ['nome', 'tipo' ]
@@ -196,7 +196,7 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
                 if ".xml" in linha: continue
                 nome = linha.split("/")[-1].split("?")[0]
                 nome_base = nome.split("_BAND")[0]
-                tipo = "red" if "BAND3" in nome else "green" if "BAND2" in nome else "blue" if "BAND1" in nome else "pan" if "BAND0" in nome else ""
+                tipo = "red" if "BAND3" in nome else "green" if "BAND2" in nome else "blue" if "BAND1" in nome else "pan" if "BAND0" in nome else "nir" if "BAND4" in nome else ""
                 d = Download(url=linha,nome=nome,nome_base=nome_base,tipo=tipo)
                 try:
                     d.save()
@@ -224,7 +224,7 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
                 try:
                     d = Download.objects.get(nome__contains=f)
                     if d.finalizado: continue
-                    with open(fullfname, "wb") as tif:
+                    with open(fullfname, "rb") as tif:
                         d.arquivo= ContentFile(tif, name=f)
                     d.finalizado=True
                     d.progresso="100 %"
@@ -258,7 +258,7 @@ class MyOSMGeoAdmin(OSMGeoAdmin):
             request, "admin/pasta_local_tiffs_form.html", payload
         )
 
-admin.site.register(Download,MyOSMGeoAdmin)
+admin.site.register(Download,MyDownloadAdmin)
 
 
 ################ ComposicaoRGB ##################
@@ -270,10 +270,8 @@ class PostgreSQLGroupConcat(Aggregate):
         super().__init__(expression, output_field=CharField(), **extra)
 
 class MyComposicaoRGBadmin(admin.ModelAdmin):
-    actions = ['comecar_composicao']
     search_fields = ['rgb']
     list_display = ('__str__', 'finalizado')
-
     change_list_template = "cbers4amanager/composicaorgb_changelist.html"
     def get_urls(self):
         urls = super().get_urls()
@@ -282,12 +280,15 @@ class MyComposicaoRGBadmin(admin.ModelAdmin):
         ]
         return my_urls + urls
     def get_downloads(self, request):
-        queryset = Download.objects.filter(finalizado=True).values("nome_base").annotate(downloads=PostgreSQLGroupConcat('nome'))
+        queryset = Download.objects.filter(finalizado=True)
+        newqueryset = queryset.filter(nome__icontains="BAND3") | queryset.filter(nome__icontains="BAND2") | queryset.filter(nome__icontains="BAND1") 
+        finalqueryset = newqueryset.values("nome_base").annotate(downloads=PostgreSQLGroupConcat('nome'))
         #print(queryset.query)
         agrupamento = []
-        for object in queryset.all():
+        for object in finalqueryset.all():
             print(object)
             if not ComposicaoRGB.objects.filter(nome_base=object['nome_base']):
+                #if all(i in object['downloads'] for i in ["BAND3","BAND2","BAND1"]):
                 bandas = {}
                 for nome in object['downloads'].split(","):
                     if "BAND3" in nome:
@@ -310,7 +311,7 @@ class MyComposicaoRGBadmin(admin.ModelAdmin):
                 rgb.save()
             self.message_user(request, "Adicionados %s registros"%(len(agrupamento)))
             return redirect("..")
-        payload = {'queryset':queryset,'opts': self.model._meta,'agrupamento':agrupamento}
+        payload = {'queryset':finalqueryset,'opts': self.model._meta,'agrupamento':agrupamento}
         return render(
             request, "admin/get_downloads_form.html", payload
         )
@@ -423,7 +424,7 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
                 file_data = f.read()
                 # sending response 
                 response = HttpResponse(file_data, content_type='image/tiff')
-                response['Content-Disposition'] = 'attachment; filename="{}"'.format(os.path.basename(i.recorte_rgb))
+                response['Content-Disposition'] = 'attachment; filename="{}"'.format(os.path.basename(arquivo))
         except IOError:
             # handle file not exist case here
             response = HttpResponseNotFound('<h1>File not exist</h1>')
@@ -449,7 +450,7 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
                     if not INOMClippered.objects.filter(nome=comprgb.nome_base+"_"+inom.inom):
                         i = INOMClippered(nome=comprgb.nome_base+"_"+inom.inom,inom=inom,rgb=comprgb)
                         try:
-                            i.pancromatica = Download.objects.get(nome_base__iexact=comprgb.nome_base,tipo='pan')
+                            i.pancromatica = Download.objects.filter(finalizado=True).get(nome_base__iexact=comprgb.nome_base,tipo='pan')
                         except:
                             pass
                         i.save()
@@ -520,11 +521,18 @@ class MyPansharpenedAdmin(admin.ModelAdmin):
             return '-'
     download_link.short_description = "Download resultado"
     def download_file(self, request, pk):
-        response = HttpResponse(content_type='application/force-download')
-        #TODO
-        response['Content-Disposition'] = 'attachment; filename="whatever.txt"'
-        # generate dynamic file content using object pk
-        response.write('whatever content')
+        p = Pansharpened.objects.get(pk=pk)
+        arquivo = p.pansharp
+        try:
+            with open(arquivo, 'rb') as f:
+                file_data = f.read()
+                # sending response 
+                response = HttpResponse(file_data, content_type='image/tiff')
+                response['Content-Disposition'] = 'attachment; filename="{}"'.format(os.path.basename(arquivo))
+        except IOError:
+            # handle file not exist case here
+            response = HttpResponseNotFound('<h1>File not exist</h1>')
+            response['Content-Disposition'] = 'attachment; filename="whatever.txt"'
         return response
     def get_recortes(self, request):
         insumos_para_pansharp_ja_registrados = Pansharpened.objects.values('insumos').all()

@@ -5,30 +5,27 @@ from django.conf import settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cbers4a.settings")
 django.setup()
 
-from cbers4amanager.models import INOMClippered, Pansharpened
+from cbers4amanager.models import Pansharpened
 
 def main(pks):
     for i in pks:
         try:
-            rec = INOMClippered.objects.get(pk=i)
+            pan = Pansharpened.objects.get(pk=i)
         except Exception as e:
             print(e)
             continue
-        if rec.finalizado: continue
-        out = os.path.join(settings.MEDIA_ROOT,'recortes',rec.nome+final_do_nome)
-        clipper = rec.inom.bounds
-        # Tenho que converter a area de recorte par aomesmo src do recortado
-        try:
-            clipee = rec.rgb.rgb if "RGB" in final_do_nome else rec.pancromatica.arquivo.path
-        except Exception as e:
-            print(e)
-            continue
-        comando = 'gdal_translate -a_nodata 0.0 -projwin '#<ulx> <uly> <lrx> <lry>
-        comando += '%s %s %s %s -projwin_srs EPSG:%s -of GTiff '%(xmin,ymax,xmax,ymin,clipper.srid)
-        comando += '%s %s'%(clipee,out)
+        if pan.finalizado: continue
+        input_pan = pan.insumos.recorte_pancromatica
+        input_rgb = pan.insumos.recorte_rgb
+        out = os.path.join(settings.MEDIA_ROOT,'pansharp',pan.insumos.nome+"_PANSHARPENED.tif")
+        comando = 'gdal_pansharpen.py "{input_pan}" "{input_rgb}" "{out}" '.format(input_pan=input_pan,input_rgb=input_rgb,out=out)
+        comando += '-co COMPRESS=DEFLATE -co PHOTOMETRIC=RGB'
         print(comando)
-        #os.system(comando)
-        print("TERMINADO:",rec)
+        os.system(comando)
+        pan.pansharp = out
+        pan.finalizado = True
+        pan.save()
+        print("TERMINADO:",pan)
 
 if __name__ == '__main__':
     pks = sys.argv[1:]
