@@ -2,6 +2,8 @@ from audioop import minmax
 from django.contrib.gis.db import models
 import os
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils.html import mark_safe
 
 # 0) ASC 1:25k
 class INOM(models.Model):
@@ -55,12 +57,13 @@ class INOMClippered(models.Model):
     inom = models.ForeignKey(INOM,on_delete=models.SET_NULL,blank=True, null=True )
     rgb = models.ForeignKey(ComposicaoRGB, on_delete=models.SET_NULL, blank=True, null=True)
     pancromatica = models.ForeignKey(Download, on_delete=models.SET_NULL, blank=True, null=True,verbose_name="Pancromática" )
-    recorte_rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'recortes'),blank=True, null=True,match='(.*)RGB.tif', help_text='Este arquivo será criado após escolher a opção "Começar recorte RGB das linhas selecionadas".' )
-    recorte_pancromatica = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'recortes'),blank=True, null=True,match='(.*)RGB.tif', help_text='Este arquivo será criado após escolher a opção "Começar recorte PAN das linhas selecionadas".' )
-    cobertura_nuvens = models.FloatField(default=1, blank=True, null=True )
+    recorte_rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'recortes'),blank=True, null=True,match='(.*)RGB.tif', max_length=300, help_text='Este arquivo será criado após escolher a opção "Começar recorte RGB das linhas selecionadas". ' )
+    recorte_pancromatica = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'recortes'),blank=True, null=True,match='(.*)PAN.tif', max_length=300, help_text='Este arquivo será criado após escolher a opção "Começar recorte PAN das linhas selecionadas".' )
+    area_util =  models.FloatField(blank=True, null=True, validators=[MaxValueValidator(100), MinValueValidator(0)], verbose_name="Área com dados (%)", help_text=mark_safe('Este dado será computado após escolher a opção "Começar recorte RGB das linhas selecionadas". <br>Equivale ao "STATISTICS_VALID_PERCENT" mínimo entre as bandas do Recorte RGB, obtido pelo comando <i>gdalinfo recorte.tif -stats</i>.') )
+    cobertura_nuvens = models.FloatField(blank=True, null=True, validators=[MaxValueValidator(100), MinValueValidator(0)], verbose_name="Área de nuvens (%)", help_text=mark_safe('Este dado será computado após escolher a opção "Começar recorte RGB das linhas selecionadas". <br>Equivale ao "STATISTICS_VALID_PERCENT" da classificação das nuvens, obtido pelo comando <i>gdalinfo nuvens.tif -stats</i>.')  )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
-        return str(self.rgb.nome_base)+"_"+str(self.inom)
+        return self.nome
     class Meta:
         verbose_name = "Recorte RGB/PAN"
         verbose_name_plural = "3) Recortes RGB/PAN"
@@ -69,8 +72,9 @@ class INOMClippered(models.Model):
 class Pansharpened(models.Model):
     insumos = models.ForeignKey(INOMClippered, on_delete=models.SET_NULL, blank=True, null=True)
     pansharp = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT,'pansharp'),blank=True, null=True )
+    finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
-        return str(self.pansharp)
+        return str(self.insumos) or str(self.pansharp)
     class Meta:
         verbose_name = "Fusão RGB/PAN"
         verbose_name_plural = "4) Fusão RGB/PAN"

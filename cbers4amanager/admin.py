@@ -1,10 +1,10 @@
-from telnetlib import DO
 from django.contrib import admin
 from django.contrib.gis.admin import OSMGeoAdmin
+from django.http import HttpResponse, HttpResponseNotFound
 from .models import INOM, Download, ComposicaoRGB, INOMClippered, Pansharpened
 from django.shortcuts import redirect, render
 from django import forms
-from django.urls import path
+from django.urls import path, re_path, reverse
 import json
 from django.contrib.gis.geos import GEOSGeometry
 from django.db import IntegrityError
@@ -17,6 +17,12 @@ from django.db.models import CharField
 from django.contrib.gis.gdal import GDALRaster
 from django.db.models.aggregates import Aggregate
 from django.utils.html import mark_safe
+
+class MySelectWithDownloadWidget(forms.widgets.Select):
+    template_name = 'django/forms/widgets/select.html'
+    option_template_name = 'django/forms/widgets/select_option.html'
+    # TODO
+
 ################ INOM ##################
 class JsonImportForm(forms.Form):
     file = forms.FileField()
@@ -360,11 +366,19 @@ class MyComposicaoRGBadmin(admin.ModelAdmin):
 
 admin.site.register(ComposicaoRGB,MyComposicaoRGBadmin)
 
-class MyINOMClipperedadmin(admin.ModelAdmin):
-    actions = ['comecar_recortes_rgb','comecar_recortes_pan']
+class MyINOMClipperedAdmin(admin.ModelAdmin):
+    actions = ['comecar_recortes_rgb','comecar_recortes_pan',set_finalizado]
     search_fields = ['nome']
-    list_display = ('nome', '_recorte_rgb', '_recorte_pan', 'cobertura_nuvens', 'finalizado')
+    list_display = ('nome', '_recorte_rgb', '_recorte_pan', 'area_util', 'cobertura_nuvens', 'finalizado')
     change_list_template = "cbers4amanager/inomclippered_changelist.html"
+    # def get_form(self, request, obj=None, **kwargs):
+    #     form = super().get_form(request, obj, **kwargs)
+    #     form.base_fields["recorte_rgb"].help_text+=mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
+    #         reverse('admin:cbers4amanager_pansharpened_download-recorte-rgb', args=[obj.pk])
+    #         ,os.path.basename(obj.recorte_rgb)
+    #     ))
+    #     return form
+
     def _recorte_rgb(self,obj):
         if not obj.recorte_rgb:
             retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
@@ -377,15 +391,44 @@ class MyINOMClipperedadmin(admin.ModelAdmin):
         else:
             retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
         return retorno
-    def render_change_form(self, request, context, *args, **kwargs):
-         context['adminform'].form.fields['pancromatica'].queryset = Download.objects.filter(nome__contains='BAND0')
-         return super(MyINOMClipperedadmin, self).render_change_form(request, context, *args, **kwargs)
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
             path('get-composicao/', self.get_composicao),
+            re_path(r'download-file/(?P<pk>\d+)/(?P<field_name>\w+)$', self.download_file, name='cbers4amanager_pansharpened_download-file')
+
         ]
         return my_urls + urls
+    def render_change_form(self, request, context, *args, **kwargs):
+        context['adminform'].form.fields['pancromatica'].queryset = Download.objects.filter(nome__contains='BAND0')
+        obj = context['original']
+        if obj is not None:
+            if obj.recorte_rgb is not None:
+                context['adminform'].form.fields['recorte_rgb'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
+                    reverse('admin:cbers4amanager_pansharpened_download-file', args=[obj.pk,'recorte_rgb'])
+                    ,os.path.basename(obj.recorte_rgb)
+                ))
+            if obj.recorte_pancromatica is not None:
+                context['adminform'].form.fields['recorte_pancromatica'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
+                    reverse('admin:cbers4amanager_pansharpened_download-file', args=[obj.pk,'recorte_pancromatica'])
+                    ,os.path.basename(obj.recorte_pancromatica)
+                ))
+
+        return super(MyINOMClipperedAdmin, self).render_change_form(request, context, *args, **kwargs)
+    def download_file(self, request, pk, field_name):
+        i = INOMClippered.objects.get(pk=pk)
+        arquivo = i.recorte_pancromatica if field_name=="recorte_pancromatica" else i.recorte_rgb
+        try:
+            with open(arquivo, 'rb') as f:
+                file_data = f.read()
+                # sending response 
+                response = HttpResponse(file_data, content_type='image/tiff')
+                response['Content-Disposition'] = 'attachment; filename="{}"'.format(os.path.basename(i.recorte_rgb))
+        except IOError:
+            # handle file not exist case here
+            response = HttpResponseNotFound('<h1>File not exist</h1>')
+            response['Content-Disposition'] = 'attachment; filename="whatever.txt"'
+        return response
     def getIntersection(self, comprgb):
         rst = GDALRaster(comprgb.rgb, write=False)
         xmin, ymin, xmax, ymax = rst.extent
@@ -420,7 +463,7 @@ class MyINOMClipperedadmin(admin.ModelAdmin):
     @admin.action(description='Começar Recortes RGB das linhas selecionadas')
     def comecar_recortes_rgb(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
-
+            # TODO
             self.message_user(request, "Adicionados %s registros"%(queryset))
         else:
             request.current_app = self.admin_site.name
@@ -434,6 +477,7 @@ class MyINOMClipperedadmin(admin.ModelAdmin):
     @admin.action(description='Começar Recortes PAN das linhas selecionadas')
     def comecar_recortes_pan(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
+            #TODO
             self.message_user(request, "Adicionados %s registros"%(queryset))
         else:
             request.current_app = self.admin_site.name
@@ -444,13 +488,77 @@ class MyINOMClipperedadmin(admin.ModelAdmin):
                 'tarefa': "COMPOSICAO"
             } 
             return render(request, "admin/recorte_confirmation.html", context)
+    @admin.action(description='Update finalizado=True das linhas selecionadas')
+    def set_finalizado(modeladmin, request, queryset):
+        queryset.update(finalizado=True)
     
-admin.site.register(INOMClippered,MyINOMClipperedadmin)
+admin.site.register(INOMClippered,MyINOMClipperedAdmin)
+
+
+class MyPansharpenedAdmin(admin.ModelAdmin):
+    actions = ['comecar_pansharp']
+    list_display = ('__str__', 'finalizado')
+    change_list_template = "cbers4amanager/pansharp_changelist.html"
+    readonly_fields = ('download_link',)
+    fields = ('insumos','pansharp', 'finalizado','download_link')
+    def render_change_form(self, request, context, *args, **kwargs):
+         context['adminform'].form.fields['pansharp'].queryset = Download.objects.filter(nome__contains='BAND0')
+         return super(MyPansharpenedAdmin, self).render_change_form(request, context, *args, **kwargs)
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('get-recortes/', self.get_recortes),
+            re_path(r'download-file/(?P<pk>\d+)$', self.download_file, name='cbers4amanager_pansharpened_download_pansharp')
+        ]
+        return my_urls + urls
+    def download_link(self, obj):
+        if obj.id is not None:
+            return mark_safe(
+                '<a href="{}">Download file</a>'.format(reverse('admin:cbers4amanager_pansharpened_download_pansharp', args=[obj.pk]))
+            ) 
+        else:
+            return '-'
+    download_link.short_description = "Download resultado"
+    def download_file(self, request, pk):
+        response = HttpResponse(content_type='application/force-download')
+        #TODO
+        response['Content-Disposition'] = 'attachment; filename="whatever.txt"'
+        # generate dynamic file content using object pk
+        response.write('whatever content')
+        return response
+    def get_recortes(self, request):
+        insumos_para_pansharp_ja_registrados = Pansharpened.objects.values('insumos').all()
+        n_registrar_esses_ids = list(set([i['insumos'] for i in insumos_para_pansharp_ja_registrados]))
+        queryset = INOMClippered.objects.filter(finalizado=True).exclude(id__in=n_registrar_esses_ids)
+        if request.method == "POST":
+            # create Genere object from passed in data
+            count = 0
+            for inomclippered in queryset.all():
+                p = Pansharpened(insumos=inomclippered)
+                p.save()
+            self.message_user(request, "Adicionados %s registros"%(count))
+            return redirect("..")
+        payload = {'queryset':queryset,'opts': self.model._meta}
+        return render(
+            request, "admin/get_recortes_form.html", payload
+        )
+    @admin.action(description='Começar Pansharpening das linhas selecionadas')
+    def comecar_pansharp(self, request, queryset):
+        if request.method=='POST' and "confirmation" in request.POST:
+            #TODO
+            self.message_user(request, "Adicionados %s registros"%(queryset))
+        else:
+            request.current_app = self.admin_site.name
+            context = {
+                'action':request.POST.get("action"),
+                'queryset':queryset,
+                'opts': self.model._meta,
+                'tarefa': "PANSHARP"
+            } 
+            return render(request, "admin/recorte_confirmation.html", context)
+    
 
 
 
-
-
-
-admin.site.register(Pansharpened)
+admin.site.register(Pansharpened, MyPansharpenedAdmin)
 

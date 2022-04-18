@@ -18,15 +18,17 @@ def main(pks):
     for i in pks:
         try:
             comprgb = ComposicaoRGB.objects.get(pk=i)
-        except:
+        except Exception as e:
+            print(str(e))
             continue
-        if comprgb.finalizado: continue
-        rgbfname = '%s'%comprgb+"_RGB.tif"
-        out = os.path.join(settings.MEDIA_ROOT,'rgb',rgbfname)
+        #if comprgb.finalizado: continue
+        rgbfname = '%s'%comprgb
+        out = os.path.join(settings.MEDIA_ROOT,'rgbs',rgbfname)
         red = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.red.nome)
         green = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.green.nome)
         blue = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.blue.nome)
-        comando = 'gdal_merge.py -separate -o {out} {red} {green} {blue}'.format(out=out,red=red,green=green,blue=blue)
+        comando = 'gdal_merge.py -separate -n 0.0 -a_nodata 0.0 -ot Int16 -co PHOTOMETRIC=RGB -co COMPRESS=DEFLATE -o '
+        comando += '{out} {red} {green} {blue}'.format(out=out,red=red,green=green,blue=blue)
         print(comando)
         os.system(comando)
         comprgb.finalizado = True
@@ -36,7 +38,7 @@ def main(pks):
 
 if __name__ == '__main__':
     pks = sys.argv[1:]
-    if "todos" in pks:
+    if "--todos" in pks:
         pks = [i.id for i in ComposicaoRGB.objects.all()]
     main(pks)
 
