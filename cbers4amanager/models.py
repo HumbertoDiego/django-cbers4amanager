@@ -25,12 +25,12 @@ class Download(models.Model):
     tipo = models.CharField(max_length=5,blank=True, null=True,
                             choices=[('nir','Infravermelho Próximo'),('red','Vermelho'),('green','Verde'),('blue','Azul'),('pan','Pancromática'),('','Indefinido')],
                             default='')
-    bounds = models.PolygonField(blank=True, null=True )
     iniciado_em = models.DateTimeField(blank=True, null=True )
     terminado_em = models.DateTimeField(blank=True, null=True )
     content_length = models.BigIntegerField(blank=True, null=True )
-    progresso = models.CharField(max_length=10,blank=True, null=True )
-    arquivo = models.FileField(upload_to='bandas/',blank=True, null=True )
+    progresso = models.BigIntegerField(blank=True, null=True )
+    arquivo = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'bandas'),blank=True, null=True, match='(.*).tif' )
+    bounds = models.PolygonField(blank=True, null=True )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
         return str(self.nome)

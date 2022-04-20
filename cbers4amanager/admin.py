@@ -83,7 +83,8 @@ def set_finalizado(modeladmin, request, queryset):
 
 @admin.action(description='Update finalizado=False das linhas selecionadas')
 def set_nao_finalizado(modeladmin, request, queryset):
-    queryset.update(finalizado=False)
+    queryset.update(finalizado=False,iniciado_em=None,terminado_em=None,progresso=None,arquivo=None)
+
 
 @admin.action(description='Update name, base_name e tipo de acordo com a url')
 def set_names(modeladmin, request, queryset):
@@ -110,25 +111,28 @@ class CsvImportForm(forms.Form):
     file = forms.FileField()
 class TextForm(forms.Form):
     caminho = forms.CharField()
-
+def int2size(content_length):
+    if not content_length:
+        retorno = "-"
+    elif content_length<=1000:
+        retorno = str(content_length)+" B"
+    elif 1000< content_length<=1000000 :
+        retorno = "{:.2f}".format(content_length/1000.0)+" KB"
+    elif 1000000< content_length<=1000000000 :
+        retorno = "{:.2f}".format(content_length/1000000.0)+" MB"
+    else:
+        retorno = "{:.2f}".format(content_length/1000000000.0)+" GB"
+    return retorno
 class MyDownloadAdmin(OSMGeoAdmin):
     actions = [set_finalizado,set_nao_finalizado,set_names,'comecar_download',set_bounds]
-    list_display = ('nome', 'tipo', 'iniciado_em','_content_length','progresso','terminado_em','finalizado')
+    list_display = ('nome', 'tipo', 'iniciado_em','_content_length','_progresso','finalizado')
     search_fields = ['nome', 'tipo' ]
     change_list_template = "cbers4amanager/download_changelist.html"
     #fields = ('nome','tipo','content_length')
     def _content_length(self, obj):
-        if not obj.content_length:
-            retorno = "-"
-        elif obj.content_length<=1000:
-            retorno = str(obj.content_length)+" B"
-        elif 1000< obj.content_length<=1000000 :
-            retorno = "{:.2f}".format(obj.content_length/1000.0)+" Kb"
-        elif 1000000< obj.content_length<=1000000000 :
-            retorno = "{:.2f}".format(obj.content_length/1000000.0)+" Mb"
-        else:
-            retorno = "{:.2f}".format(obj.content_length/1000000000.0)+" Gb"
-        return retorno
+        return int2size(obj.content_length)
+    def _progresso(self, obj):
+        return int2size(obj.progresso)
     @admin.action(description='Começar Download')
     def comecar_download(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
@@ -190,7 +194,7 @@ class MyDownloadAdmin(OSMGeoAdmin):
             # create Genere object from passed in data
             txt = request.FILES["file"]
             text = txt.read().decode("utf-8") 
-            linhas = [u for u in text.split("\n") if u]
+            linhas = [u.strip() for u in text.split("\n") if u]
             count = 0
             for linha in linhas:
                 if ".xml" in linha: continue
