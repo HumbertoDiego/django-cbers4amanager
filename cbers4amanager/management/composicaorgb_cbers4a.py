@@ -6,13 +6,24 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cbers4a.settings")
 django.setup()
 
 from cbers4amanager.models import ComposicaoRGB
-from django.core.files.base import ContentFile
+from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.gdal import GDALRaster
 """
 CASO ERRO: ModuleNotFoundError: No module named '_gdal_array'
 pip uninstall gdal
 pip install numpy
 pip install gdal
 """
+
+def set_bounds(comprgb):
+    rst = GDALRaster(comprgb.rgb, write=False)
+    xmin, ymin, xmax, ymax = rst.extent
+    pol = 'POLYGON(({xmin} {ymin},{xmax} {ymin},{xmax} {ymax},{xmin} {ymax},{xmin} {ymin}))'.format(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
+    print(pol)
+    poly = GEOSGeometry(pol,srid=rst.srid)
+    comprgb.bounds = poly
+    comprgb.save()
+
 
 def main(pks):
     for i in pks:
@@ -21,7 +32,7 @@ def main(pks):
         except Exception as e:
             print(str(e))
             continue
-        #if comprgb.finalizado: continue
+        if comprgb.finalizado: continue
         rgbfname = '%s'%comprgb
         out = os.path.join(settings.MEDIA_ROOT,'rgbs',rgbfname)
         red = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.red.nome)
@@ -34,6 +45,7 @@ def main(pks):
         comprgb.finalizado = True
         comprgb.rgb = out
         comprgb.save()
+        set_bounds(comprgb)
         print("TERMINADO:",rgbfname)
 
 if __name__ == '__main__':

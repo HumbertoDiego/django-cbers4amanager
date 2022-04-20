@@ -7,6 +7,7 @@ from django import forms
 from django.urls import path, re_path, reverse
 import json
 from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.gdal import GDALRaster
 from django.db import IntegrityError
 from django.contrib import messages
 from process.models import Process, Job, Task
@@ -14,7 +15,6 @@ import os
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.db.models import CharField
-from django.contrib.gis.gdal import GDALRaster
 from django.db.models.aggregates import Aggregate
 from django.utils.html import mark_safe
 
@@ -98,8 +98,7 @@ def set_names(modeladmin, request, queryset):
 @admin.action(description='Update limites (após download)')
 def set_bounds(modeladmin, request, queryset):
     for e in queryset:
-        fpath=os.path.join(os.getcwd(),'uploads/bandas',e.nome)
-        rst = GDALRaster(fpath, write=False)
+        rst = GDALRaster(e.arquivo, write=False)
         xmin, ymin, xmax, ymax = rst.extent
         pol = 'POLYGON(({xmin} {ymin},{xmax} {ymin},{xmax} {ymax},{xmin} {ymax},{xmin} {ymin}))'.format(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
         print(pol)
@@ -128,9 +127,10 @@ class MyDownloadAdmin(OSMGeoAdmin):
     list_display = ('nome', 'tipo', 'iniciado_em','_content_length','_progresso','finalizado')
     search_fields = ['nome', 'tipo' ]
     change_list_template = "cbers4amanager/download_changelist.html"
-    #fields = ('nome','tipo','content_length')
+    @admin.display(ordering='content_length')
     def _content_length(self, obj):
         return int2size(obj.content_length)
+    @admin.display(ordering='progresso')   
     def _progresso(self, obj):
         return int2size(obj.progresso)
     @admin.action(description='Começar Download')
@@ -266,6 +266,16 @@ admin.site.register(Download,MyDownloadAdmin)
 
 
 ################ ComposicaoRGB ##################
+@admin.action(description='Update limites (após composição colorida)')
+def set_bounds_rgb(modeladmin, request, queryset):
+    for e in queryset:
+        rst = GDALRaster(e.rgb, write=False)
+        xmin, ymin, xmax, ymax = rst.extent
+        pol = 'POLYGON(({xmin} {ymin},{xmax} {ymin},{xmax} {ymax},{xmin} {ymax},{xmin} {ymin}))'.format(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
+        print(pol)
+        poly = GEOSGeometry(pol,srid=rst.srid)
+        e.bounds = poly
+        e.save()
 
 class PostgreSQLGroupConcat(Aggregate):
     template = "array_to_string(array_agg(%(expressions)s), ',') "
@@ -273,8 +283,9 @@ class PostgreSQLGroupConcat(Aggregate):
     def __init__(self, expression, **extra):
         super().__init__(expression, output_field=CharField(), **extra)
 
-class MyComposicaoRGBadmin(admin.ModelAdmin):
+class MyComposicaoRGBadmin(OSMGeoAdmin):
     search_fields = ['rgb']
+    actions = [set_bounds_rgb]
     list_display = ('__str__', 'finalizado')
     change_list_template = "cbers4amanager/composicaorgb_changelist.html"
     def get_urls(self):
@@ -290,9 +301,8 @@ class MyComposicaoRGBadmin(admin.ModelAdmin):
         #print(queryset.query)
         agrupamento = []
         for object in finalqueryset.all():
-            print(object)
-            if not ComposicaoRGB.objects.filter(nome_base=object['nome_base']):
-                #if all(i in object['downloads'] for i in ["BAND3","BAND2","BAND1"]):
+            if not ComposicaoRGB.objects.filter(nome_base=object['nome_base']) and all(i in object['downloads'] for i in ["BAND3","BAND2","BAND1"]):
+                print(object)
                 bandas = {}
                 for nome in object['downloads'].split(","):
                     if "BAND3" in nome:
@@ -376,20 +386,14 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
     search_fields = ['nome']
     list_display = ('nome', '_recorte_rgb', '_recorte_pan', 'area_util', 'cobertura_nuvens', 'finalizado')
     change_list_template = "cbers4amanager/inomclippered_changelist.html"
-    # def get_form(self, request, obj=None, **kwargs):
-    #     form = super().get_form(request, obj, **kwargs)
-    #     form.base_fields["recorte_rgb"].help_text+=mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
-    #         reverse('admin:cbers4amanager_pansharpened_download-recorte-rgb', args=[obj.pk])
-    #         ,os.path.basename(obj.recorte_rgb)
-    #     ))
-    #     return form
-
+    @admin.display(ordering='recorte_rgb')
     def _recorte_rgb(self,obj):
         if not obj.recorte_rgb:
             retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
         else:
             retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
         return retorno
+    @admin.display(ordering='recorte_pancromatica')
     def _recorte_pan(self,obj):
         if not obj.recorte_pancromatica:
             retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
@@ -435,6 +439,7 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
             response['Content-Disposition'] = 'attachment; filename="whatever.txt"'
         return response
     def getIntersection(self, comprgb):
+        print(comprgb)
         rst = GDALRaster(comprgb.rgb, write=False)
         xmin, ymin, xmax, ymax = rst.extent
         pol = 'POLYGON(({xmin} {ymin},{xmax} {ymin},{xmax} {ymax},{xmin} {ymax},{xmin} {ymin}))'.format(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
@@ -449,7 +454,11 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
             # create Genere object from passed in data
             count = 0
             for comprgb in queryset.all():
-                inoms = self.getIntersection(comprgb)
+                try:
+                    inoms = self.getIntersection(comprgb)
+                except:
+                    continue
+                print(inoms)
                 for inom in inoms.all():
                     if not INOMClippered.objects.filter(nome=comprgb.nome_base+"_"+inom.inom):
                         i = INOMClippered(nome=comprgb.nome_base+"_"+inom.inom,inom=inom,rgb=comprgb)

@@ -45,6 +45,7 @@ class ComposicaoRGB(models.Model):
     blue = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='set', blank=True, null=True )
     nome_base = models.CharField(max_length=500,blank=True, null=True, unique=True )
     rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'rgbs'),blank=True, null=True,match='(.*)RGB.tif', help_text='Este arquivo será criado após escolher a opção "Começar composição das linhas selecionadas".' )
+    bounds = models.PolygonField(blank=True, null=True )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
         return str(self.red.nome_base or self.green.nome_base or self.blue.nome_base or self.nome_base)+"_RGB.tif"
@@ -52,7 +53,7 @@ class ComposicaoRGB(models.Model):
         verbose_name = "Composição RGB"
         verbose_name_plural = "2) Composições RGB"
 
-# 3) Cortar dentro dos INOMs 1:25k as composições RGB e a banda PAN
+# 3) Cortar dentro dos INOMs 1:25k as composições RGB e a banda PANV
 class INOMClippered(models.Model):
     nome = models.CharField(max_length=500, unique=True )
     inom = models.ForeignKey(INOM,on_delete=models.SET_NULL,blank=True, null=True )
