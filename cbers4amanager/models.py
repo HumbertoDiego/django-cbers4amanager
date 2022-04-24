@@ -80,7 +80,7 @@ class Pansharpened(models.Model):
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
         if self.pansharp: return os.path.basename(self.pansharp)
-        else: return self.insumos
+        else: return str(self.insumos)
     class Meta:
         verbose_name = "Fusão RGB/PAN"
         verbose_name_plural = "4) Fusão RGB/PAN"

@@ -58,10 +58,9 @@ def main(pks,final_do_nome):
         except Exception as e:
             print(e)
             continue
-        #if rec.finalizado: continue
+        if rec.finalizado: continue
         out = os.path.join(settings.MEDIA_ROOT,'recortes',rec.nome+final_do_nome)
         clipper = rec.inom.bounds
-        # Tenho que converter a area de recorte par aomesmo src do recortado
         try:
             clipee = rec.rgb.rgb if "RGB" in final_do_nome else rec.pancromatica.arquivo.path
         except Exception as e:
@@ -72,7 +71,12 @@ def main(pks,final_do_nome):
         comando += '%s %s %s %s -projwin_srs EPSG:%s -of GTiff '%(xmin,ymax,xmax,ymin,clipper.srid)
         comando += '%s %s'%(clipee,out)
         print(comando)
-        os.system(comando)
+        # TODO: Dar um jeito de descobrir se deu erro no comando GDAL
+        try:
+            os.system(comando)
+        except:
+            print("ERRO GDAL, PULANDO.")
+            continue
         if "RGB" in final_do_nome:
             # TODO: Ver  se o recorte deu certo
             rec.recorte_rgb = out

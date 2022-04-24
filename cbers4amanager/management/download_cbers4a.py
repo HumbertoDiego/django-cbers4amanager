@@ -113,7 +113,7 @@ def main(pks):
 			continue
 		else:
 			try:
-				print("%s INICIANDO."%i)
+				print("%s %s - INICIANDO."%(i,download.nome))
 				sucesso = baixar(download)
 			except KeyboardInterrupt:
 				print('Interrupted')

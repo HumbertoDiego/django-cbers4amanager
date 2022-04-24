@@ -124,15 +124,52 @@ def int2size(content_length):
     return retorno
 class MyDownloadAdmin(OSMGeoAdmin):
     actions = [set_finalizado,set_nao_finalizado,set_names,'comecar_download',set_bounds]
-    list_display = ('nome', 'tipo', 'iniciado_em','_content_length','_progresso','finalizado')
+    list_display = ('_nome', 'tipo', 'iniciado_em','_content_length','_progresso','finalizado')
     search_fields = ['nome', 'tipo' ]
+    list_filter = ('finalizado', 'tipo')
     change_list_template = "cbers4amanager/download_changelist.html"
+    @admin.display(ordering='nome')
+    def _nome(self, obj):
+        return obj.nome.replace("_"," ")
     @admin.display(ordering='content_length')
     def _content_length(self, obj):
         return int2size(obj.content_length)
     @admin.display(ordering='progresso')   
     def _progresso(self, obj):
         return int2size(obj.progresso)
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('import-txt/', self.import_txt),
+            path('import-tiffs-de-pasta-local/', self.import_tiffs_de_pasta_local),
+            re_path(r'download-file/(?P<pk>\d+)$', self.download_file, name='cbers4amanager_download_download-file'),
+        ]
+        return my_urls + urls
+    def render_change_form(self, request, context, *args, **kwargs):
+        obj = context['original']
+        if obj is not None:
+            if obj.arquivo is not None:
+                context['adminform'].form.fields['arquivo'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
+                    reverse('admin:cbers4amanager_download_download-file', args=[obj.pk])
+                    ,os.path.basename(obj.arquivo)
+                ))
+        return super(MyDownloadAdmin, self).render_change_form(request, context, *args, **kwargs)
+    def download_file(self, request, pk):
+        p = Download.objects.get(pk=pk)
+        arquivo = p.arquivo
+        try:
+            if arquivo:
+                with open(arquivo, 'rb') as f:
+                    file_data = f.read()
+                    # sending response 
+                    response = HttpResponse(file_data, content_type='image/tiff')
+                    response['Content-Disposition'] = 'attachment; filename="{}"'.format(os.path.basename(arquivo))
+            else:
+                response = HttpResponseNotFound('<h1>File not exist</h1>')
+        except IOError:
+            # handle file not exist case here
+            response = HttpResponseNotFound('<h1>File not exist</h1>')
+        return response
     @admin.action(description='Começar Download')
     def comecar_download(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
@@ -182,13 +219,6 @@ class MyDownloadAdmin(OSMGeoAdmin):
                 'tarefa': "DOWNLOAD"
             } 
             return render(request, "admin/download_confirmation.html", context)
-    def get_urls(self):
-        urls = super().get_urls()
-        my_urls = [
-            path('import-txt/', self.import_txt),
-            path('import-tiffs-de-pasta-local/', self.import_tiffs_de_pasta_local),
-        ]
-        return my_urls + urls
     def import_txt(self, request):
         if request.method == "POST":
             # create Genere object from passed in data
@@ -286,14 +316,43 @@ class PostgreSQLGroupConcat(Aggregate):
 class MyComposicaoRGBadmin(OSMGeoAdmin):
     search_fields = ['rgb']
     actions = [set_bounds_rgb]
-    list_display = ('__str__', 'finalizado')
+    list_display = ('_nome', 'finalizado')
     change_list_template = "cbers4amanager/composicaorgb_changelist.html"
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
             path('get-downloads/', self.get_downloads),
+            re_path(r'download-file/(?P<pk>\d+)$', self.download_file, name='cbers4amanager_composicaorgb_download-file'),
         ]
         return my_urls + urls
+    def render_change_form(self, request, context, *args, **kwargs):
+        obj = context['original']
+        if obj is not None:
+            if obj.rgb is not None:
+                context['adminform'].form.fields['rgb'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
+                    reverse('admin:cbers4amanager_composicaorgb_download-file', args=[obj.pk])
+                    ,os.path.basename(obj.rgb)
+                ))
+        return super(MyComposicaoRGBadmin, self).render_change_form(request, context, *args, **kwargs)
+    @admin.display(ordering='nome_base')
+    def _nome(self,obj):
+        return str(obj.red.nome_base or obj.green.nome_base or obj.blue.nome_base or obj.nome_base)+"_RGB.tif"
+    def download_file(self, request, pk):
+        p = ComposicaoRGB.objects.get(pk=pk)
+        arquivo = p.rgb
+        try:
+            if arquivo:
+                with open(arquivo, 'rb') as f:
+                    file_data = f.read()
+                    # sending response 
+                    response = HttpResponse(file_data, content_type='image/tiff')
+                    response['Content-Disposition'] = 'attachment; filename="{}"'.format(os.path.basename(arquivo))
+            else:
+                response = HttpResponseNotFound('<h1>File not exist</h1>')
+        except IOError:
+            # handle file not exist case here
+            response = HttpResponseNotFound('<h1>File not exist</h1>')
+        return response
     def get_downloads(self, request):
         queryset = Download.objects.filter(finalizado=True)
         newqueryset = queryset.filter(nome__icontains="BAND3") | queryset.filter(nome__icontains="BAND2") | queryset.filter(nome__icontains="BAND1") 
@@ -404,8 +463,7 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         my_urls = [
             path('get-composicao/', self.get_composicao),
-            re_path(r'download-file/(?P<pk>\d+)/(?P<field_name>\w+)$', self.download_file, name='cbers4amanager_pansharpened_download-file')
-
+            re_path(r'download-file/(?P<pk>\d+)/(?P<field_name>\w+)$', self.download_file, name='cbers4amanager_inomclippered_download-file')
         ]
         return my_urls + urls
     def render_change_form(self, request, context, *args, **kwargs):
@@ -414,15 +472,14 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
         if obj is not None:
             if obj.recorte_rgb is not None:
                 context['adminform'].form.fields['recorte_rgb'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
-                    reverse('admin:cbers4amanager_pansharpened_download-file', args=[obj.pk,'recorte_rgb'])
+                    reverse('admin:cbers4amanager_inomclippered_download-file', args=[obj.pk,'recorte_rgb'])
                     ,os.path.basename(obj.recorte_rgb)
                 ))
             if obj.recorte_pancromatica is not None:
                 context['adminform'].form.fields['recorte_pancromatica'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
-                    reverse('admin:cbers4amanager_pansharpened_download-file', args=[obj.pk,'recorte_pancromatica'])
+                    reverse('admin:cbers4amanager_inomclippered_download-file', args=[obj.pk,'recorte_pancromatica'])
                     ,os.path.basename(obj.recorte_pancromatica)
                 ))
-
         return super(MyINOMClipperedAdmin, self).render_change_form(request, context, *args, **kwargs)
     def download_file(self, request, pk, field_name):
         i = INOMClippered.objects.get(pk=pk)
@@ -511,10 +568,14 @@ admin.site.register(INOMClippered,MyINOMClipperedAdmin)
 
 class MyPansharpenedAdmin(admin.ModelAdmin):
     actions = ['comecar_pansharp']
-    list_display = ('__str__', 'finalizado')
+    list_display = ('_nome', 'finalizado')
     change_list_template = "cbers4amanager/pansharp_changelist.html"
     readonly_fields = ('download_link',)
     fields = ('insumos','pansharp', 'finalizado','download_link')
+    @admin.display(ordering='pansharp')
+    def _nome(self,obj):
+        if obj.pansharp: return os.path.basename(obj.pansharp)
+        else: return str(obj.insumos)
     def render_change_form(self, request, context, *args, **kwargs):
          context['adminform'].form.fields['pansharp'].queryset = Download.objects.filter(nome__contains='BAND0')
          return super(MyPansharpenedAdmin, self).render_change_form(request, context, *args, **kwargs)
