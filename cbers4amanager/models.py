@@ -29,7 +29,7 @@ class Download(models.Model):
     terminado_em = models.DateTimeField(blank=True, null=True )
     content_length = models.BigIntegerField(blank=True, null=True )
     progresso = models.BigIntegerField(blank=True, null=True )
-    arquivo = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'bandas'),blank=True, null=True, match='(.*).tif' )
+    arquivo = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'bandas'),blank=True, null=True)
     bounds = models.PolygonField(blank=True, null=True )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):

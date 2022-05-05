@@ -148,6 +148,11 @@ class MyDownloadAdmin(OSMGeoAdmin):
     def render_change_form(self, request, context, *args, **kwargs):
         obj = context['original']
         if obj is not None:
+            banda = obj.nome.split("_")[-1]
+            field = forms.FilePathField(path=context['adminform'].form.fields['arquivo'].path,match='(.*)'+banda)
+            choices = [('','---------')]
+            choices.extend(field.choices)
+            context['adminform'].form.fields['arquivo']._set_choices(choices)
             if obj.arquivo is not None:
                 context['adminform'].form.fields['arquivo'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
                     reverse('admin:cbers4amanager_download_download-file', args=[obj.pk])

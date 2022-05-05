@@ -41,9 +41,9 @@ def getNuvens(fname,m):
     f = 0.5
     fdelta= 0.0005
     comando = "gdal_calc.py -A {fname} --A_band=1 -B {fname} --B_band=2 -C {fname} --C_band=3 "
-    comando += "--calc='((A-B)<{delta})*((C-A)<{delta})*((B-C)<{delta})' "
+    #comando += "--calc='((A-B)<{delta})*((C-A)<{delta})*((B-C)<{delta})' "
     #TODO
-    #comando += "--calc='(A>{r})*(B>{g})*(C>{b})' "
+    comando += "--calc='(A>{r})*(B>{g})*(C>{b})' "
     #comando += "--calc='A+B+C>{soma}' "       --co NBITS=1 --type Byte   
     comando += " --outfile {out} --overwrite  --NoDataValue 0"
     comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),delta=fdelta*sum(m),out=out)
@@ -62,7 +62,7 @@ def main(pks,final_do_nome):
         out = os.path.join(settings.MEDIA_ROOT,'recortes',rec.nome+final_do_nome)
         clipper = rec.inom.bounds
         try:
-            clipee = rec.rgb.rgb if "RGB" in final_do_nome else rec.pancromatica.arquivo.path
+            clipee = rec.rgb.rgb if "RGB" in final_do_nome else rec.pancromatica.arquivo
         except Exception as e:
             print(e)
             continue
