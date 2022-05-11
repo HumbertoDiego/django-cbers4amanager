@@ -31,6 +31,7 @@ class MyInomAdmin(OSMGeoAdmin):
     actions = []
     list_display = ('inom', 'mi')
     change_list_template = "cbers4amanager/inom_changelist.html"
+    search_fields = ['inom' ]
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
@@ -231,13 +232,14 @@ class MyDownloadAdmin(OSMGeoAdmin):
                     with open(fullfname, "rb") as tif:
                         d.arquivo= ContentFile(tif, name=f)
                     d.finalizado=True
-                    d.progresso="100 %"
+                    d.content_length=os.path.getsize(f)
+                    d.progresso=os.path.getsize(f)
                     d.save()
                     m+=1
                 except:
                     nome_base = f.split("_BAND")[0]
                     tipo = "red" if "BAND3" in f else "green" if "BAND2" in f else "blue" if "BAND1" in f else "pan" if "BAND0" in f else ""
-                    d = Download(url=fullfname,nome=f,nome_base=nome_base,tipo=tipo,finalizado=True,progresso="100 %",terminado_em = timezone.now())
+                    d = Download(url=fullfname,nome=f,nome_base=nome_base,tipo=tipo,finalizado=True,terminado_em = timezone.now())
                     with open(fullfname, "rb") as tif:
                         d.arquivo= ContentFile(tif.read(), name=f)
                         tif.seek(0,2)
@@ -246,6 +248,7 @@ class MyDownloadAdmin(OSMGeoAdmin):
                             print("PULANDO:",f)
                             continue
                         d.content_length = size
+                        d.progresso = size
                     try:
                         d.save()
                         a+=1

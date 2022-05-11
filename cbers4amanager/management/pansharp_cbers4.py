@@ -23,7 +23,6 @@ def main(pks):
         print(comando)
         os.system(comando)
         pan.pansharp = out
-        pan.finalizado = True
         pan.save()
         print("TERMINADO:",pan)
 

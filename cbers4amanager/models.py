@@ -11,11 +11,14 @@ class INOM(models.Model):
     inom = models.CharField(max_length=20,unique=True)
     mi = models.CharField(max_length=20,blank=True,null=True,verbose_name = "Mapa Índice")
     bounds = models.PolygonField(blank=True, null=True )
+    melhor_imagem = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT,'pansharp'),
+                                    blank=True, null=True, match='(.*).tif', max_length=300,
+    )
     def __str__(self):
         return str(self.inom)
     class Meta:
         verbose_name = "Área de Interesse"
-        verbose_name_plural = "0) Áreas de Interesse"
+        verbose_name_plural = "Áreas de Interesse"
 
 # 1)
 class Download(models.Model):

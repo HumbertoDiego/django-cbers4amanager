@@ -108,12 +108,13 @@ def main(pks):
 		if not download.url:
 			print("%s SEM URL, defina uma url para Repetir."%i)
 			continue
+		
 		elif download.progresso and download.progresso==download.content_length:
 			print("%s JÁ FINALIZADO, altere progresso=0 para Repetir."%i)
 			continue
 		else:
 			try:
-				print("%s INICIANDO."%i)
+				print("%s %s INICIANDO"%(i,download.nome))
 				sucesso = baixar(download)
 			except KeyboardInterrupt:
 				print('Interrupted')
