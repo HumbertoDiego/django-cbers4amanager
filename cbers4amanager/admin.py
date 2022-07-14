@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.gis.admin import OSMGeoAdmin
 from django.http import HttpResponse, HttpResponseNotFound
-from .models import INOM, Download, ComposicaoRGB, INOMClippered, Pansharpened
+from .models import Projeto, INOM, Download, ComposicaoRGB, INOMClippered, Pansharpened
 from django.shortcuts import redirect, render
 from django import forms
 from django.urls import path, re_path, reverse
@@ -22,6 +22,13 @@ class MySelectWithDownloadWidget(forms.widgets.Select):
     template_name = 'django/forms/widgets/select.html'
     option_template_name = 'django/forms/widgets/select_option.html'
     # TODO
+############### PROJETO ###############
+class MyProjetoAdmin(OSMGeoAdmin):
+    search_fields = ['nome' ]
+
+admin.site.register(Projeto,MyProjetoAdmin)
+
+
 
 ################ INOM ##################
 class JsonImportForm(forms.Form):
@@ -260,30 +267,39 @@ class MyDownloadAdmin(OSMGeoAdmin):
             # 1) Encontrar se já existe a intenção de download desse arquivo com mesmo nome
             for f in onlytifsfiles:
                 fullfname = os.path.join(caminho,f)
+                size = os.path.getsize(fullfname)
+                if not size or size<100000: continue # arquivos muito pequenos podem ser atalhos ou hidden files
                 print("IMPORTANDO:",f)
                 try:
+                    # Já existia a intenção desse download registrada no banco
                     d = Download.objects.get(nome__contains=f)
                     if d.finalizado: continue
-                    with open(fullfname, "rb") as tif:
-                        d.arquivo= ContentFile(tif, name=f)
+                    if d.progresso==size: continue
+                    # obsoleto qd este campo se tornou FilePath:
+                    # with open(fullfname, "rb") as tif:
+                    #     d.arquivo= ContentFile(tif.read(), name=f)
+                    dst = os.path.join(Download._meta.get_field('arquivo').path,f)
+                    if dst!=fullfname: os.rename(fullfname, dst)
+                    d.arquivo = dst
                     d.finalizado=True
-                    d.content_length=os.path.getsize(f)
-                    d.progresso=os.path.getsize(f)
+                    d.content_length=size
+                    d.progresso=size
                     d.save()
                     m+=1
-                except:
+                except Exception as e:
+                    print(str(e))
                     nome_base = f.split("_BAND")[0]
                     tipo = "red" if "BAND3" in f else "green" if "BAND2" in f else "blue" if "BAND1" in f else "pan" if "BAND0" in f else ""
                     d = Download(url=fullfname,nome=f,nome_base=nome_base,tipo=tipo,finalizado=True,terminado_em = timezone.now())
-                    with open(fullfname, "rb") as tif:
-                        d.arquivo= ContentFile(tif.read(), name=f)
-                        tif.seek(0,2)
-                        size = tif.tell()
-                        if not size: 
-                            print("PULANDO:",f)
-                            continue
-                        d.content_length = size
-                        d.progresso = size
+                    ## obsoleto qd este campo se tornou FilePath:
+                    # with open(fullfname, "rb") as tif:
+                    #     d.arquivo= ContentFile(tif.read(), name=f)
+                    #     d.content_length = size
+                    #     d.progresso = size
+                    dst = os.path.join(Download._meta.get_field('arquivo').path,f) # Inofensivo se o destino=origem
+                    if dst!=fullfname: os.rename(fullfname, dst)
+                    d.arquivo = dst
+                    d.content_length = d.progresso = os.path.getsize(dst)
                     try:
                         d.save()
                         a+=1

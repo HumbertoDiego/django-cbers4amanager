@@ -6,6 +6,13 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.html import mark_safe
 
+# -1) Projetos
+class Projeto(models.Model):
+    nome = models.CharField(max_length=20,unique=True)
+    bounds = models.PolygonField(blank=True, null=True)
+    def __str__(self):
+        return str(self.nome)
+
 # 0) ASC 1:25k
 class INOM(models.Model):
     inom = models.CharField(max_length=20,unique=True)
@@ -14,6 +21,7 @@ class INOM(models.Model):
     melhor_imagem = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT,'pansharp'),
                                     blank=True, null=True, match='(.*).tif', max_length=300,
     )
+    projeto = models.ForeignKey(Projeto, on_delete=models.SET_NULL, blank=True, null=True)
     def __str__(self):
         return str(self.inom)
     class Meta:
@@ -41,7 +49,7 @@ class Download(models.Model):
         verbose_name = "Download"
         verbose_name_plural = "1) Downloads"
 
-# 2)
+# 2.1)
 class ComposicaoRGB(models.Model):
     red = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='red', blank=True, null=True )
     green = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='green', blank=True, null=True )
@@ -54,7 +62,22 @@ class ComposicaoRGB(models.Model):
         return str(self.red.nome_base or self.green.nome_base or self.blue.nome_base or self.nome_base)+"_RGB.tif"
     class Meta:
         verbose_name = "Composição RGB"
-        verbose_name_plural = "2) Composições RGB"
+        verbose_name_plural = "2.1) Composições RGB"
+
+# 2.2)
+# class ComposicaoNDVI(models.Model):
+#     red = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='vermelho', blank=True, null=True )
+#     nir = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='nir', blank=True, null=True )
+#     nome_base = models.CharField(max_length=500,blank=True, null=True, unique=True )
+#     ndvi = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'ndvis'),blank=True, null=True,match='(.*)NDVI.tif', help_text='Este arquivo será criado após escolher a opção "Começar composição das linhas selecionadas".' )
+#     bounds = models.PolygonField(blank=True, null=True )
+#     finalizado = models.BooleanField(default=False,blank=True, null=True )
+#     def __str__(self):
+#         return str(self.red.nome_base or self.nir.nome_base or self.nome_base)+"_NDVI.tif"
+#     class Meta:
+#         verbose_name = "Composição NDVI"
+#         verbose_name_plural = "2.2) Composições NDVI"
+
 
 # 3) Cortar dentro dos INOMs 1:25k as composições RGB e a banda PANV
 class INOMClippered(models.Model):
