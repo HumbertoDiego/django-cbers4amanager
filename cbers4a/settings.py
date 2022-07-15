@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 from pathlib import Path
-from cbers4a_secrets import USERNAME_POST,PASSWORD_POST,DJANGO_SECRET_KEY
+import os
+from cbers4a_secrets import USERNAME_POST,PASSWORD_POST,DJANGO_SECRET_KEY, HOST_POST
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -99,7 +100,7 @@ DATABASES = {
         'NAME': 'cbers4a',
         'USER': USERNAME_POST,
         'PASSWORD': PASSWORD_POST,
-        'HOST': 'localhost',
+        'HOST': HOST_POST,
         'PORT': '5432'
     }
 }
@@ -190,3 +191,10 @@ THUMBNAILS = {
 
 FILE_UPLOAD_PERMISSIONS = 0o775
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o775
+# comentar caso em UNIX ou trocar a dll caso versão seja diferente
+GDAL_LIBRARY_PATH = r'C:\Program Files\QGIS 3.22.5\bin\gdal304.dll'
+# CASO:
+# GDAL_ERROR 1: b'PROJ: proj_create_from_database: C:\\Program Files\\PostgreSQL\\14\\share\\contrib\\postgis-3.2\\proj\\proj.db 
+# contains DATABASE.LAYOUT.VERSION.MINOR = 0 whereas a number >= 2 is expected. It comes from another PROJ installation.' 
+# SOLUÇÃO:
+os.environ['PROJ_LIB'] = r'C:\Program Files\QGIS 3.22.5\share\proj'

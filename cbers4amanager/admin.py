@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.gis.admin import OSMGeoAdmin
+from django.contrib.gis.admin import GISModelAdmin
 from django.http import HttpResponse, HttpResponseNotFound
 from .models import Projeto, INOM, Download, ComposicaoRGB, INOMClippered, Pansharpened
 from django.shortcuts import redirect, render
@@ -23,7 +24,7 @@ class MySelectWithDownloadWidget(forms.widgets.Select):
     option_template_name = 'django/forms/widgets/select_option.html'
     # TODO
 ############### PROJETO ###############
-class MyProjetoAdmin(OSMGeoAdmin):
+class MyProjetoAdmin(GISModelAdmin):
     search_fields = ['nome' ]
 
 admin.site.register(Projeto,MyProjetoAdmin)
