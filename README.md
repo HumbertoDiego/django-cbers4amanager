@@ -13,7 +13,8 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
   * cbers4a=# CREATE EXTENSION postgis_raster;
   * cbers4a=# CREATE EXTENSION postgis_sfcgal; 
 * Django
-  * sudo apt install python3-django
+  * pip install django psycopg2
+  * 
 * Bibliotecas Geoespaciais para o funcionamento do GeoDjango
 
 | Program |	Description |	Required | Supported Versions |
