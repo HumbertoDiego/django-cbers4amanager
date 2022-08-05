@@ -40,12 +40,14 @@ def getNuvens(fname,m):
     mred,mgreen,mblue = m[0:3]
     f = 0.5
     fdelta= 0.0005
-    comando = "gdal_calc.py -A {fname} --A_band=1 -B {fname} --B_band=2 -C {fname} --C_band=3 "
+    comando = 'gdal_calc'
+    comando += '.bat' if os.name=='nt' else '.py'
+    comando += " -A {fname} --A_band=1 -B {fname} --B_band=2 -C {fname} --C_band=3 "
     #comando += "--calc='((A-B)<{delta})*((C-A)<{delta})*((B-C)<{delta})' "
     #TODO
     comando += "--calc='(A>{r})*(B>{g})*(C>{b})' "
     #comando += "--calc='A+B+C>{soma}' "       --co NBITS=1 --type Byte   
-    comando += " --outfile {out} --overwrite  --NoDataValue 0"
+    comando += " --outfile {out} --overwrite --NoDataValue 0"
     comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),delta=fdelta*sum(m),out=out)
     print(comando)
     os.system(comando)

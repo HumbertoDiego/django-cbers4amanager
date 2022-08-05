@@ -38,7 +38,9 @@ def main(pks):
         red = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.red.nome)
         green = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.green.nome)
         blue = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.blue.nome)
-        comando = 'gdal_merge.py -separate -n 0.0 -a_nodata 0.0 -ot Int16 -co PHOTOMETRIC=RGB -co COMPRESS=DEFLATE -o '
+        comando = 'gdal_merge'
+        comando += '.bat' if os.name=='nt' else '.py'
+        comando += ' -separate -n 0.0 -a_nodata 0.0 -ot Int16 -co PHOTOMETRIC=RGB -co COMPRESS=DEFLATE -o '
         comando += '{out} {red} {green} {blue}'.format(out=out,red=red,green=green,blue=blue)
         print(comando)
         os.system(comando)

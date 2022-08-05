@@ -206,4 +206,5 @@ os.environ['PROJ_LIB'] = PROJ_LIB
 # CASO:
 # ImportError: Could not find the GEOS library (tried "geos_c", "libgeos_c-1"). 
 # Try setting GEOS_LIBRARY_PATH in your settings.
-os.environ['GEOS_LIBRARY_PATH'] = GEOS_LIBRARY_PATH
+#os.environ['GEOS_LIBRARY_PATH'] = r'C:\Program Files\QGIS 3.22.5\bin\geos_c.dll'
+#os.environ['GEOS_LIBRARY_PATH'] = GEOS_LIBRARY_PATH
