@@ -45,8 +45,8 @@ def getNuvens(fname,m):
     comando += " -A {fname} --A_band=1 -B {fname} --B_band=2 -C {fname} --C_band=3 "
     #comando += "--calc='((A-B)<{delta})*((C-A)<{delta})*((B-C)<{delta})' "
     #TODO
-    comando += "--calc='(A>{r})*(B>{g})*(C>{b})' "
-    #comando += "--calc='A+B+C>{soma}' "       --co NBITS=1 --type Byte   
+    comando += '--calc="(A>{r})*(B>{g})*(C>{b})" '#--co NBITS=1 --type Byte '
+    #comando += "--calc='A+B+C>{soma}' "         
     comando += " --outfile {out} --overwrite --NoDataValue 0"
     comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),delta=fdelta*sum(m),out=out)
     print(comando)
@@ -69,6 +69,11 @@ def main(pks,final_do_nome):
             print(e)
             continue
         xmin, ymin, xmax, ymax = clipper.extent
+        """
+        BUG: não adianta setar o proj_lib no ambiente django com os.environ['PROJ_LIB'] = ...
+        se estou usando os.system pra executar o gdal
+        FIX: o sistema operacional tem que usar o proj_lib do QGIS 
+        """ 
         comando = 'gdal_translate -a_nodata 0.0 -projwin '#<ulx> <uly> <lrx> <lry>
         comando += '%s %s %s %s -projwin_srs EPSG:%s -of GTiff '%(xmin,ymax,xmax,ymin,clipper.srid)
         comando += '%s %s'%(clipee,out)
