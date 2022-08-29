@@ -1,10 +1,10 @@
 cbers4amanager/migrations/
 process/migrations/
-uploads/bandas/
+uploads/bandas/*.tiff
 uploads/dj_process_tasks/
-uploads/nuvens/
-uploads/pansharp/
-uploads/recortes/
+uploads/nuvens/*.tiff
+uploads/pansharp/*.tiff
+uploads/recortes/*.tiff
 uploads/rgbs/*.tiff
 __pycache__/
 cbers4a_secrets.py
