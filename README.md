@@ -2,28 +2,22 @@
 App para download, composição RGB, recorte, calcular coeficiente de nuvens e fazer pansharpen de imagens CBERS4A.
 
 ## Requisitos
-* PostgreSQL: 
-  * apt install postgresql postgis
-  * su USERNAME_POST # Alterar o arquivo settings.py com este username
-  * psql
-  * postgres=# \password -- Alterar o arquivo settings.py com esta senha -> PASSWORD_POST
-  * postgres=# CREATE DATABASE cbers4a;
-  * postgres=# \c cbers4a
-  * cbers4a=# CREATE EXTENSION postgis; 
-  * cbers4a=# CREATE EXTENSION postgis_raster;
-  * cbers4a=# CREATE EXTENSION postgis_sfcgal; 
-* Django
-  * pip install django psycopg2
-  * 
-* Bibliotecas Geoespaciais para o funcionamento do GeoDjango
+* Docker: 
+  * Windows:
+    * Fazer o download e instalar [Start Docker Desktop](https://docs.docker.com/desktop/install/windows-install/ "Start Docker Desktop"); e
+    * Fazer o download e instalar o [Windows Subsystem for Linux Kernel](https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi "Windows Subsystem for Linux Kernel") (wsl2kernel)
 
-| Program |	Description |	Required | Supported Versions |
-|---|-----|----|-------|
-| GEOS |	Geometry Engine Open Source |	Yes |	3.10, 3.9, 3.8, 3.7, 3.6 |
-| PROJ |	Cartographic Projections library |	Yes (PostgreSQL and SQLite only) |	8.x, 7.x, 6.x, 5.x, 4.x |
-| GDAL |	Geospatial Data Abstraction Library |	Yes |	3.3, 3.2, 3.1, 3.0, 2.4, 2.3, 2.2, 2.1 |
-| GeoIP |	IP-based geolocation library |	No |	2 |
-| PostGIS |	Spatial extensions for PostgreSQL |	Yes (PostgreSQL only) |	3.1, 3.0, 2.5, 2.4 |
-| SpatiaLite |	Spatial extensions for SQLite |	Yes (SQLite only) |	5.0, 4.3 |
+  * Ubuntu: 
+    ```
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    DRY_RUN=1 sh ./get-docker.sh
+    ```
+## Instalação
 
+```docker-compose up -d
+docker-compose exec app python manage.py makemigrations
+docker-compose exec app python manage.py migrate
+docker-compose exec app python manage.py createsuperuser
+docker-compose restart
+```
 ## Fluxo de tabalho
