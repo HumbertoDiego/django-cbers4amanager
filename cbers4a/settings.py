@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 from pathlib import Path
 import os
-from cbers4a_secrets import USERNAME_POST,PASSWORD_POST,DJANGO_SECRET_KEY, HOST_POST, GDAL_LIBRARY_PATH, PROJ_LIB, GEOS_LIBRARY_PATH
+from cbers4a_secrets import DJANGO_SECRET_KEY
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -97,14 +97,13 @@ WSGI_APPLICATION = 'cbers4a.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'cbers4a',
-        'USER': USERNAME_POST,
-        'PASSWORD': PASSWORD_POST,
-        'HOST': HOST_POST,
+        'NAME': os.environ['POST_DB'],
+        'USER': os.environ['POST_USER'],
+        'PASSWORD': os.environ['POST_PASSWORD'],
+        'HOST': os.environ['POST_HOST'],
         'PORT': '5432'
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -191,20 +190,3 @@ THUMBNAILS = {
 
 FILE_UPLOAD_PERMISSIONS = 0o775
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o775
-# comentar caso em UNIX ou trocar a dll caso versão seja diferente
-# GDAL_LIBRARY_PATH = r'C:\Program Files\QGIS 3.22.5\bin\gdal304.dll'
-
-# CASO:
-# GDAL_ERROR 1: b'PROJ: proj_create_from_database: 
-# C:\\Program Files\\PostgreSQL\\14\\share\\contrib\\postgis-3.2\\proj\\proj.db 
-# contains DATABASE.LAYOUT.VERSION.MINOR = 0 whereas a number >= 2 is expected. 
-# It comes from another PROJ installation.' 
-# SOLUÇÃO:
-# os.environ['PROJ_LIB'] = r'C:\Program Files\QGIS 3.22.5\share\proj'
-os.environ['PROJ_LIB'] = PROJ_LIB
-
-# CASO:
-# ImportError: Could not find the GEOS library (tried "geos_c", "libgeos_c-1"). 
-# Try setting GEOS_LIBRARY_PATH in your settings.
-#os.environ['GEOS_LIBRARY_PATH'] = r'C:\Program Files\QGIS 3.22.5\bin\geos_c.dll'
-#os.environ['GEOS_LIBRARY_PATH'] = GEOS_LIBRARY_PATH
