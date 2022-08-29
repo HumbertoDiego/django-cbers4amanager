@@ -5,7 +5,7 @@ uploads/dj_process_tasks/
 uploads/nuvens/
 uploads/pansharp/
 uploads/recortes/
-uploads/rgbs/*
+uploads/rgbs/*.tiff
 __pycache__/
 cbers4a_secrets.py
 WORKFLOW.md
