@@ -14,7 +14,8 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
     ```
 ## Instalação
 
-```docker-compose up -d
+```
+docker-compose up -d
 docker-compose exec app python manage.py makemigrations
 docker-compose exec app python manage.py migrate
 docker-compose exec app python manage.py createsuperuser
