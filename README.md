@@ -22,3 +22,5 @@ docker-compose exec app python manage.py createsuperuser
 docker-compose restart
 ```
 ## Fluxo de tabalho
+
+* Navegar par ao site do INPE e realizar a pesquisa inicial por áreas de interesse.
