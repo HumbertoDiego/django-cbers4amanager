@@ -45,7 +45,7 @@ def getNuvens(fname,m):
     comando += " -A {fname} --A_band=1 -B {fname} --B_band=2 -C {fname} --C_band=3 "
     #comando += "--calc='((A-B)<{delta})*((C-A)<{delta})*((B-C)<{delta})' "
     #TODO
-    comando += '--calc="(A>{r})*(B>{g})*(C>{b})" '#--co NBITS=1 --type Byte '
+    comando += '--calc="(A>{r})*(B>{g})*(C>{b})" --co NBITS=1 --type Byte '
     #comando += "--calc='A+B+C>{soma}' "         
     comando += " --outfile {out} --overwrite --NoDataValue 0"
     comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),delta=fdelta*sum(m),out=out)

@@ -25,8 +25,13 @@ class MySelectWithDownloadWidget(forms.widgets.Select):
     # TODO
 ############### PROJETO ###############
 class MyProjetoAdmin(GISModelAdmin):
-    search_fields = ['nome' ]
-
+    search_fields = ['nome']
+    list_display = ('nome','_aoi_associadas' )
+    @admin.display()
+    def _aoi_associadas(self,obj):
+        manys = INOM.objects.select_related().filter(projeto_id=obj.id) # Rápido
+        #manys = INOM.objects.filter(projeto_id=obj.id) # Lento
+        return manys.count()
 admin.site.register(Projeto,MyProjetoAdmin)
 
 
@@ -37,9 +42,16 @@ class JsonImportForm(forms.Form):
 
 class MyInomAdmin(OSMGeoAdmin):
     actions = []
-    list_display = ('inom', 'mi')
+    list_display = ('inom', 'mi','_projeto')
     change_list_template = "cbers4amanager/inom_changelist.html"
     search_fields = ['inom' ]
+    @admin.display(ordering='projeto_id')
+    def _projeto(self,obj):
+        if not obj.projeto_id:
+            retorno = ""
+        else:
+            retorno = obj.projeto.nome
+        return retorno
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [

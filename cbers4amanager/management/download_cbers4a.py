@@ -38,7 +38,7 @@ def resume_download(fileurl, resume_byte_position):
 	resume_header = {'Range': 'bytes=%d-' % resume_byte_position}
 	resume_header.update(headers)
 	#print(resume_header)
-	return requests.get(fileurl, headers=resume_header, stream=True, allow_redirects=True)
+	return requests.get(fileurl, verify=False, headers=resume_header, stream=True, allow_redirects=True,timeout=60)
 
 def baixar(download):
 	url = download.url
@@ -60,14 +60,19 @@ def baixar(download):
 	try:
 		if download.progresso and download.progresso==exist_size:
 			print("Continuando download do byte",exist_size)
-		else:
+		elif download.progresso and download.progresso!=exist_size:
 			print("Continuando download confiar no arquivo local em vez de progresso",exist_size)
 		r = resume_download(url, exist_size)
 		print(r.request.headers)
 		print(r.headers)
 		requested_length = r.headers.get('content-length')
 		if "html" in r.headers.get('content-type'):
-			print(r.headers.get('content-type'))
+			print(r.headers.get('content-type'),r.content)
+			if r.status_code == 416: # Requested Range Not Satisfiable
+				download.content_length = exist_size
+				download.progresso = exist_size
+				download.finalizado = True
+				download.terminado_em = timezone.now()
 		elif requested_length is None: 
 			print("no content length header")
 			download.content_length = 0
@@ -82,18 +87,24 @@ def baixar(download):
 			else:
 				total_length = download.content_length
 			ini = time.time()
+			speed = 0.001
 			with open(out,a_or_w) as f:
 				for data in r.iter_content(chunk_size=4096):
 					f.write(data)
 					exist_size += len(data)
 					current_downloaded += len(data)
 					download.progresso = exist_size
-					speed =  current_downloaded/1000/(time.time() - ini)
+					delta_t = time.time() - ini
+					if delta_t!=0:
+						speed =  current_downloaded/1000/delta_t
 					download.save()
 					print("\r{:.1f}% - {:.1f} KB/s".format(exist_size*100/total_length,speed), end="")
 			download.finalizado = True
 			download.terminado_em = timezone.now()
 	except requests.exceptions.Timeout as e:
+		print(str(e))
+		return 0
+	except Exception as e:
 		print(str(e))
 		return 0
 	download.save()
@@ -122,11 +133,14 @@ def main(pks):
 					sys.exit(0)
 				except SystemExit:
 					os._exit(0)
+			except Exception as e:
+				print("%s"%i,"- PULANDO devido a",e)
+				continue
 			if not sucesso:
 				download.progresso = None
 				download.save()
 				print(" - INTERROMPIDO.")
-				break
+				continue
 			else:
 				print(" - ENCERRADO.")
 

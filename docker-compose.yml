@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    depends_on:
+      - post
+    networks:
+      - overlay
+    container_name: cbers4amanager
+    working_dir: /app
+    volumes:
+          - ./:/app
+    command: sh -c "python manage.py runserver 0.0.0.0:81"
+    ports:
+          - 81:81
+    environment:
+      POST_HOST: post
+      POST_USER: postgres
+      POST_PASSWORD: secret
+      POST_DB: cbers4a
+  post:
+    image: postgis/postgis:11-2.5
+    container_name: postgis
+    networks:
+      - overlay
+    ports:
+          - 5432:5432
+    volumes:
+          - post-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: cbers4a
+volumes:
+  post-data:
+networks:
+  overlay:

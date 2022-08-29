@@ -19,7 +19,7 @@ class INOM(models.Model):
     melhor_imagem = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT,'pansharp'),
                                     blank=True, null=True, match='(.*).tif', max_length=300,
     )
-    projeto = models.ForeignKey(Projeto, on_delete=models.SET_NULL, blank=True, null=True)
+    projeto = models.ForeignKey(Projeto, on_delete=models.SET_NULL, blank=True, null=True, related_name='relateds',)
     def __str__(self):
         return str(self.inom)
     class Meta:
