@@ -1,6 +1,7 @@
 cbers4amanager/migrations/
 process/migrations/
 uploads/dj_process_tasks/*.py
+uploads/dj_process_tasks/*.sh
 uploads/a/*/*.tif
 __pycache__/
 cbers4amanager/management/pop_processesv2.py
