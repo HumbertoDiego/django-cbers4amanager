@@ -43,3 +43,7 @@ Após a confecção final da imagem fusionada com resolução espacial de 2m, ou
       1. Usuário: `docker-compose exec app python -c "import os;print(os.environ['POST_USER'])"`
       1. Senha: `docker-compose exec app python -c "import os;print(os.environ['POST_PASSWORD'])"`
 2. Verificação dos dados
+
+### Adicionar feições via QGIS
+
+Feições geoespaciais em formatos de arquivos diversos são mais facilmente incorporadas na tabela `projeto` e `inom` (Áreas de interesse) carregadas com um simples copiar e colar dentro do QGIS.

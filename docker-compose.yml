@@ -19,6 +19,7 @@ services:
       POST_USER: postgres
       POST_PASSWORD: secret
       POST_DB: cbers4a
+    restart: always
   post:
     image: postgis/postgis:11-2.5
     container_name: postgis
@@ -31,6 +32,7 @@ services:
     environment:
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: cbers4a
+    restart: always
 volumes:
   post-data:
 networks:
