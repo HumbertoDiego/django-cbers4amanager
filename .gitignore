@@ -7,5 +7,3 @@ uploads/pansharp/*.tiff
 uploads/recortes/*.tiff
 uploads/rgbs/*.tiff
 __pycache__/
-cbers4a_secrets.py
-WORKFLOW.md
