@@ -3,3 +3,5 @@ process/migrations/
 uploads/dj_process_tasks/*.py
 uploads/a/*/*.tif
 __pycache__/
+cbers4amanager/management/pop_processesv2.py
+cbers4amanager/management/proxy_auth.sh
