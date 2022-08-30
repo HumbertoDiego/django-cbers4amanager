@@ -24,14 +24,14 @@ docker-compose restart
 ```
 ## Fluxo de tabalho
 
-1. Navegar para a página http://<IP>:81/admin, realizar o LOGIN com as credenciais de superusuário criadas.
+1. Navegar para a página `http://<IP>:81/admin`, realizar o LOGIN com as credenciais de superusuário criadas.
 
 
 ## Manual admin
 
 ### Deletar conjunto de arquivos obsoletos usados como insumos (bandas, composição RGB/NDVI e recortes)
 
-Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os isnumos podem ser deletados para fins de poupar espaço em disco. Para fazer isso, é necessario verificar o banco em postgres://<IP>:5432 e coletar o `ID` e as `tabelas` dos arquivos.
+Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os isnumos podem ser deletados para fins de poupar espaço em disco. Para fazer isso, é necessario verificar o banco em `postgres://<IP>:5432` e coletar o ID e as tabelas dos arquivos.
 
 1. Abrir o QGIS --> Janela navegador --> PostgreSQL --> New Connection...
    1. Nome: `<qualquer>`
@@ -39,4 +39,4 @@ Após a confecção final da imagem fusionada com resolução espacial de 2m, ou
    1. Banco de Dados : `docker-compose exec app python -c "import os;print(os.environ['POST_DB'])"`
    1. Autenticação: 
       1. Usuário: `docker-compose exec app python -c "import os;print(os.environ['POST_USER'])"`
-      1. Palavra-passe: ` docker-compose exec app python -c "import os;print(os.environ['POST_PASSWORD'])"`
+      1. Senha: `docker-compose exec app python -c "import os;print(os.environ['POST_PASSWORD'])"`
