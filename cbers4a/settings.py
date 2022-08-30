@@ -190,3 +190,11 @@ THUMBNAILS = {
 
 FILE_UPLOAD_PERMISSIONS = 0o775
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o775
+
+CBERS4AMANAGER = {
+    'LIMITS': {
+        'storage':'1T',
+
+    },
+    'SAMPLE_FOLDER': 'cbers4amanager/static/cbers4amanager/amostras'
+}

@@ -16,15 +16,15 @@ class INOM(models.Model):
     inom = models.CharField(max_length=20,unique=True)
     mi = models.CharField(max_length=20,blank=True,null=True,verbose_name = "Mapa Índice")
     bounds = models.PolygonField(blank=True, null=True )
-    melhor_imagem = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT,'pansharp'),
+    melhor_imagem = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/pansharp'),
                                     blank=True, null=True, match='(.*).tif', max_length=300,
     )
     projeto = models.ForeignKey(Projeto, on_delete=models.SET_NULL, blank=True, null=True, related_name='relateds',)
     def __str__(self):
         return str(self.inom)
     class Meta:
-        verbose_name = "Área de Interesse"
-        verbose_name_plural = "Áreas de Interesse"
+        verbose_name = "Área de interesse"
+        verbose_name_plural = "Áreas de interesse"
 
 # 1)
 class Download(models.Model):
@@ -38,7 +38,7 @@ class Download(models.Model):
     terminado_em = models.DateTimeField(blank=True, null=True )
     content_length = models.BigIntegerField(blank=True, null=True )
     progresso = models.BigIntegerField(blank=True, null=True )
-    arquivo = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'bandas'),blank=True, null=True)
+    arquivo = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/bandas'),blank=True, null=True)
     bounds = models.PolygonField(blank=True, null=True )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
@@ -53,7 +53,7 @@ class ComposicaoRGB(models.Model):
     green = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='green', blank=True, null=True )
     blue = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='set', blank=True, null=True )
     nome_base = models.CharField(max_length=500,blank=True, null=True, unique=True )
-    rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'rgbs'),blank=True, null=True,match='(.*)RGB.tif', help_text='Este arquivo será criado após escolher a opção "Começar composição das linhas selecionadas".' )
+    rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/rgbs'),blank=True, null=True,match='(.*)RGB.tif', help_text='Este arquivo será criado após escolher a opção "Começar composição das linhas selecionadas".' )
     bounds = models.PolygonField(blank=True, null=True )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
@@ -67,7 +67,7 @@ class ComposicaoRGB(models.Model):
 #     red = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='vermelho', blank=True, null=True )
 #     nir = models.ForeignKey(Download, on_delete=models.SET_NULL, related_name='nir', blank=True, null=True )
 #     nome_base = models.CharField(max_length=500,blank=True, null=True, unique=True )
-#     ndvi = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'ndvis'),blank=True, null=True,match='(.*)NDVI.tif', help_text='Este arquivo será criado após escolher a opção "Começar composição das linhas selecionadas".' )
+#     ndvi = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/ndvis'),blank=True, null=True,match='(.*)NDVI.tif', help_text='Este arquivo será criado após escolher a opção "Começar composição das linhas selecionadas".' )
 #     bounds = models.PolygonField(blank=True, null=True )
 #     finalizado = models.BooleanField(default=False,blank=True, null=True )
 #     def __str__(self):
@@ -83,8 +83,8 @@ class INOMClippered(models.Model):
     inom = models.ForeignKey(INOM,on_delete=models.SET_NULL,blank=True, null=True )
     rgb = models.ForeignKey(ComposicaoRGB, on_delete=models.SET_NULL, blank=True, null=True)
     pancromatica = models.ForeignKey(Download, on_delete=models.SET_NULL, blank=True, null=True,verbose_name="Pancromática" )
-    recorte_rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'recortes'),blank=True, null=True, match='(.*)RGB.tif', max_length=300, help_text='Este arquivo será criado após escolher a opção "Começar recorte RGB das linhas selecionadas". ' )
-    recorte_pancromatica = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'recortes'),blank=True, null=True,match='(.*)PAN.tif', max_length=300, help_text='Este arquivo será criado após escolher a opção "Começar recorte PAN das linhas selecionadas".' )
+    recorte_rgb = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/recortes'),blank=True, null=True, match='(.*)RGB.tif', max_length=300, help_text='Este arquivo será criado após escolher a opção "Começar recorte RGB das linhas selecionadas". ' )
+    recorte_pancromatica = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/recortes'),blank=True, null=True,match='(.*)PAN.tif', max_length=300, help_text='Este arquivo será criado após escolher a opção "Começar recorte PAN das linhas selecionadas".' )
     area_util =  models.FloatField(blank=True, null=True, validators=[MaxValueValidator(100), MinValueValidator(0)], verbose_name="Área com dados (%)", help_text=mark_safe('Este dado será computado após escolher a opção "Começar recorte RGB das linhas selecionadas". <br>Equivale ao "STATISTICS_VALID_PERCENT" mínimo entre as bandas do Recorte RGB, obtido pelo comando <i>gdalinfo recorte.tif -stats</i>.') )
     cobertura_nuvens = models.FloatField(blank=True, null=True, validators=[MaxValueValidator(100), MinValueValidator(0)], verbose_name="Área de nuvens (%)", help_text=mark_safe('Este dado será computado após escolher a opção "Começar recorte RGB das linhas selecionadas". <br>Equivale ao "STATISTICS_VALID_PERCENT" da classificação das nuvens, obtido pelo comando <i>gdalinfo nuvens.tif -stats</i>.')  )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
@@ -97,7 +97,7 @@ class INOMClippered(models.Model):
 # 4) Pan
 class Pansharpened(models.Model):
     insumos = models.ForeignKey(INOMClippered, on_delete=models.SET_NULL, blank=True, null=True)
-    pansharp = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT,'pansharp'),
+    pansharp = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/pansharp'),
                                     blank=True, null=True, match='(.*).tif', max_length=300,
                                     help_text='Este arquivo será criado após escolher a opção "Começar Fusão RGB/PAN das linhas selecionadas". ',
     )
