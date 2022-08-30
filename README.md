@@ -16,6 +16,8 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
 ## Instalação
 
 ```
+git init
+git pull https://github.com/HumbertoDiego/django-cbers4amanager
 docker-compose up -d
 docker-compose exec app python manage.py makemigrations
 docker-compose exec app python manage.py migrate
