@@ -1,9 +1,5 @@
 cbers4amanager/migrations/
 process/migrations/
-uploads/bandas/*.tiff
-uploads/dj_process_tasks/
-uploads/nuvens/*.tiff
-uploads/pansharp/*.tiff
-uploads/recortes/*.tiff
-uploads/rgbs/*.tiff
+uploads/dj_process_tasks/*.py
+uploads/a/*/*.tif
 __pycache__/
