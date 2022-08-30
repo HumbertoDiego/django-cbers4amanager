@@ -24,4 +24,19 @@ docker-compose restart
 ```
 ## Fluxo de tabalho
 
-* Navegar par ao site do INPE e realizar a pesquisa inicial por áreas de interesse.
+1. Navegar para a página http://<IP>:81/admin, realizar o LOGIN com as credenciais de superusuário criadas.
+
+
+## Manual admin
+
+### Deletar conjunto de arquivos obsoletos usados como insumos (bandas, composição RGB/NDVI e recortes)
+
+Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os isnumos podem ser deletados para fins de poupar espaço em disco. Para fazer isso, é necessario verificar o banco em postgres://<IP>:5432 e coletar o `ID` e as `tabelas` dos arquivos.
+
+1. Abrir o QGIS --> Janela navegador --> PostgreSQL --> New Connection...
+   1. Nome: `<qualquer>`
+   1. Host: `ip a | grep inet # escolher o IP do adaptador ligado a rede, geralmente eth0 `
+   1. Banco de Dados : `docker-compose exec app python -c "import os;print(os.environ['POST_DB'])"`
+   1. Autenticação: 
+      1. Usuário: `docker-compose exec app python -c "import os;print(os.environ['POST_USER'])"`
+      1. Palavra-passe: ` docker-compose exec app python -c "import os;print(os.environ['POST_PASSWORD'])"`
