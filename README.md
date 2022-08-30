@@ -27,7 +27,7 @@ docker-compose restart
 1. Navegar para a página `http://<IP>:81/admin`, realizar o LOGIN com as credenciais de superusuário criadas.
 
 
-## Manual admin
+## Administração manual
 
 ### Deletar conjunto de arquivos obsoletos usados como insumos (bandas, composição RGB/NDVI e recortes)
 
@@ -40,3 +40,4 @@ Após a confecção final da imagem fusionada com resolução espacial de 2m, ou
    1. Autenticação: 
       1. Usuário: `docker-compose exec app python -c "import os;print(os.environ['POST_USER'])"`
       1. Senha: `docker-compose exec app python -c "import os;print(os.environ['POST_PASSWORD'])"`
+2. Verificação dos dados
