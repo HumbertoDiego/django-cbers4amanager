@@ -36,7 +36,7 @@ def getAreaUtil(fname):
 def getNuvens(fname,m):
     file_name, file_extension = os.path.splitext(os.path.basename(fname))
     new_file_name = file_name+"_NUVENS"+file_extension
-    out = os.path.join(settings.MEDIA_ROOT,'nuvens',new_file_name)
+    out = os.path.join(settings.MEDIA_ROOT,'a','nuvens',new_file_name)
     mred,mgreen,mblue = m[0:3]
     f = 0.5
     fdelta= 0.0005
@@ -61,7 +61,7 @@ def main(pks,final_do_nome):
             print(e)
             continue
         if rec.finalizado: continue
-        out = os.path.join(settings.MEDIA_ROOT,'recortes',rec.nome+final_do_nome)
+        out = os.path.join(settings.MEDIA_ROOT,'a','recortes',rec.nome+final_do_nome)
         clipper = rec.inom.bounds
         try:
             clipee = rec.rgb.rgb if "RGB" in final_do_nome else rec.pancromatica.arquivo
@@ -102,6 +102,11 @@ def main(pks,final_do_nome):
                 area_util = None
             rec.cobertura_nuvens = area_util
             rec.save()
+        l = settings.CBERS4AMANAGER['LIMITS']
+        if rec.rgb and rec.pancromatica:
+            if rec.area_util>float(l['min_area_util_percent']) and rec.cobertura_nuvens<float(l['max_area_nuvens_percent']) :
+                rec.finalizado = True
+                rec.save()
         print("TERMINADO:",rec)
 
 if __name__ == '__main__':

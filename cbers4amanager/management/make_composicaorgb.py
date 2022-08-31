@@ -34,10 +34,10 @@ def main(pks):
             continue
         if comprgb.finalizado: continue
         rgbfname = '%s'%comprgb
-        out = os.path.join(settings.MEDIA_ROOT,'rgbs',rgbfname)
-        red = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.red.nome)
-        green = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.green.nome)
-        blue = os.path.join(settings.MEDIA_ROOT,'bandas',comprgb.blue.nome)
+        out = os.path.join(settings.MEDIA_ROOT,'a','rgbs',rgbfname)
+        red = os.path.join(settings.MEDIA_ROOT,'a','bandas',comprgb.red.nome)
+        green = os.path.join(settings.MEDIA_ROOT,'a','bandas',comprgb.green.nome)
+        blue = os.path.join(settings.MEDIA_ROOT,'a','bandas',comprgb.blue.nome)
         comando = 'gdal_merge'
         comando += '.bat' if os.name=='nt' else '.py'
         comando += ' -separate -n 0.0 -a_nodata 0.0 -ot Int16 -co PHOTOMETRIC=RGB -co COMPRESS=DEFLATE -o '

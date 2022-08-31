@@ -45,7 +45,7 @@ def baixar(download):
 	# Teste OK
 	#url = "https://static.djangoproject.com/img/fundraising-heart.cd6bb84ffd33.svg"
 	fullfname, fname, ext = get_fname_ext(url)
-	out = os.path.join(settings.MEDIA_ROOT,'bandas',download.nome)
+	out = os.path.join(settings.MEDIA_ROOT,'a','bandas',download.nome)
 	current_downloaded = 0 
 	download.iniciado_em = timezone.now()
 	download.terminado_em = None

@@ -42,16 +42,9 @@ class JsonImportForm(forms.Form):
 
 class MyInomAdmin(OSMGeoAdmin):
     actions = []
-    list_display = ('inom', 'mi','_projeto')
+    list_display = ('inom', 'mi','projeto','melhor_imagem')
     change_list_template = "cbers4amanager/inom_changelist.html"
     search_fields = ['inom' ]
-    @admin.display(ordering='projeto_id')
-    def _projeto(self,obj):
-        if not obj.projeto_id:
-            retorno = ""
-        else:
-            retorno = obj.projeto.nome
-        return retorno
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [

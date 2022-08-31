@@ -17,7 +17,7 @@ class PostgreSQLGroupConcat(Aggregate):
     def __init__(self, expression, **extra):
         super().__init__(expression, output_field=CharField(), **extra)
 		
-def get_downloads():
+def get_downloads(classe, requisicao):
     queryset = Download.objects.filter(finalizado=True)
     newqueryset = queryset.filter(nome__icontains="BAND3") | queryset.filter(nome__icontains="BAND2") | queryset.filter(nome__icontains="BAND1") 
     finalqueryset = newqueryset.values("nome_base").annotate(downloads=PostgreSQLGroupConcat('nome'))
@@ -48,6 +48,6 @@ def get_downloads():
     print("Adicionados %s registros"%(len(agrupamento)))
 
 if __name__ == '__main__':
-	get_downloads()
+	get_downloads(None,None)
 	
 

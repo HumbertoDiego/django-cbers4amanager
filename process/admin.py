@@ -35,6 +35,10 @@ class TaskAdmin(admin.ModelAdmin):
     form = TaskForm
     list_display = ('__str__', 'is_active', 'process')
 
+    @admin.display(ordering='process')   
+    def _process(self, obj):
+        return obj.process.name+' - '+obj.process.description
+
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
     def get_readonly_fields(self, request, obj=None):
         if obj:

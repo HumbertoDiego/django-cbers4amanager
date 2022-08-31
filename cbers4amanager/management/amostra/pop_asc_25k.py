@@ -11,7 +11,7 @@ from django.db import IntegrityError
 
 
 def main(pks):
-    ascpath = os.path.join(os.getcwd(),'cbers4amanager','management','popinoms','asc_25k.csv')
+    ascpath = os.path.join(os.getcwd(),'cbers4amanager','static','cbers4amanager','amostra','asc_25k.csv')
     with open(ascpath, newline='') as csvfile:
         features = csv.reader(csvfile, delimiter=',', quotechar='"')
         header = next(features)
