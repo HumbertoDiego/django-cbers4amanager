@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from email import header
-import os, sys, django, time
-#sys.path.append('/home/capdiego/Documents/cbers4a')  
+import os, sys, django
+
 sys.path.append(os.getcwd()) 
 
 from django.conf import settings
@@ -9,7 +8,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cbers4a.settings")
 django.setup()
 
 from process.models import Task, Process
-from django.utils import timezone
 from django.core.files import File
 from django.db import connection
 from pathlib import Path
