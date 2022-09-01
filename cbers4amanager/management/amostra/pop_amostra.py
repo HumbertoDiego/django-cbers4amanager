@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, django
+import os, sys, django, csv
 sys.path.append(os.getcwd()) 
 
 from django.conf import settings
@@ -8,12 +8,13 @@ django.setup()
 
 from cbers4amanager.models import Projeto, INOM, Download
 from django.contrib.gis.geos import GEOSGeometry
+from django.db import IntegrityError
 
 def import_txt(classe, requisicao):
     # create Genere object from passed in data
-    inpe_catalog_path = os.path.join(os.getcwd(),'cbers4amanager','static','cbers4amanager','amostra','inpe_catalog.txt')
+    inpe_catalog_path = os.path.join(os.getcwd(),'cbers4amanager','static','cbers4amanager','amostras','inpe_catalog.txt')
     with open(inpe_catalog_path) as f:
-        text = f.read().decode("utf-8") 
+        text = f.read()
     linhas = [u.strip() for u in text.split("\n") if u]
     count = 0
     for linha in linhas:
@@ -32,13 +33,12 @@ def import_txt(classe, requisicao):
 
 def main():
     # Projeto
-    p = Projeto(
+    (p,created) = Projeto.objects.get_or_create(
         nome='SC-19-V-C na escala 1:50K',
         bounds=GEOSGeometry('Polygon ((-71.9999999249999405 -9.00000009399997225, -70.50000001199998678 -9.00000009399997225, -70.50000001199998678 -10.0000002029999564, -71.9999999249999405 -10.0000002029999564, -71.9999999249999405 -9.00000009399997225))',srid=4326)
         )
-    p.save()
     # INOM
-    inomspath = os.path.join(os.getcwd(),'cbers4amanager','static','cbers4amanager','amostra','SC-19-V-C_em_50K.csv')
+    inomspath = os.path.join(os.getcwd(),'cbers4amanager','static','cbers4amanager','amostras','SC-19-V-C_em_50K.csv')
     with open(inomspath, newline='') as csvfile:
         features = csv.reader(csvfile, delimiter=';', quotechar='"')
         header = next(features)
@@ -46,7 +46,7 @@ def main():
             #"wkt","inom","mi"
             wkt,inom,mi = feature[0:3]
             pol = GEOSGeometry(wkt,srid=4326)
-            i = INOM(inom=inom, mi=mi, bounds=pol, projeto=p.id)
+            i = INOM(inom=inom, mi=mi, bounds=pol, projeto=p)
             try:
                 i.save()
             except IntegrityError as e:
