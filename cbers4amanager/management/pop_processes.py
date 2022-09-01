@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import os, sys, django
 sys.path.append(os.getcwd()) 
 
@@ -249,7 +249,7 @@ def main():
         arguments='--todos --rgb',
         process_id=p7.id
     )
-    path = Path('cbers4amanager/management/rm_downloads.py')
+    path = Path('cbers4amanager/management/rm_download.py')
     with path.open(mode='rb') as f:
         t.code = File(f, name=path.name)
         t.save()
