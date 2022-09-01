@@ -247,9 +247,9 @@ def main():
         offset='0%',
         interpreter='python',
         arguments='--todos --rgb',
-        process_id=p7.id
+        process_id=p8.id
     )
-    path = Path('cbers4amanager/management/rm_downloads.py')
+    path = Path('cbers4amanager/management/rm_download.py')
     with path.open(mode='rb') as f:
         t.code = File(f, name=path.name)
         t.save()

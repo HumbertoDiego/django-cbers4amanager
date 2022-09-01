@@ -11,7 +11,7 @@ services:
     working_dir: /app
     volumes:
           - ./:/app
-    command: sh -c "python manage.py runserver 0.0.0.0:81"
+    command: sh -c "./my_wrapper_script.sh"
     ports:
           - 81:81
     environment:
