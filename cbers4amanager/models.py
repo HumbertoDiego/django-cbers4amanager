@@ -10,6 +10,8 @@ class Projeto(models.Model):
     bounds = models.PolygonField(blank=True, null=True)
     def __str__(self):
         return str(self.nome)
+    class Meta:
+        verbose_name_plural = "(0.0) Projetos"
 
 # 0) ASC 1:25k
 class INOM(models.Model):
@@ -24,7 +26,7 @@ class INOM(models.Model):
         return str(self.inom)
     class Meta:
         verbose_name = "Área de interesse"
-        verbose_name_plural = "Áreas de interesse"
+        verbose_name_plural = "(0.1) Áreas de interesse"
 
 # 1)
 class Download(models.Model):
@@ -45,7 +47,7 @@ class Download(models.Model):
         return str(self.nome)
     class Meta:
         verbose_name = "Download"
-        verbose_name_plural = "1) Downloads"
+        verbose_name_plural = "(1) Downloads"
 
 # 2.1)
 class ComposicaoRGB(models.Model):
@@ -60,7 +62,7 @@ class ComposicaoRGB(models.Model):
         return str(self.red.nome_base or self.green.nome_base or self.blue.nome_base or self.nome_base)+"_RGB.tif"
     class Meta:
         verbose_name = "Composição RGB"
-        verbose_name_plural = "2.1) Composições RGB"
+        verbose_name_plural = "(2) Composições RGB"
 
 # 2.2)
 # class ComposicaoNDVI(models.Model):
@@ -92,7 +94,7 @@ class INOMClippered(models.Model):
         return self.nome
     class Meta:
         verbose_name = "Recorte RGB/PAN"
-        verbose_name_plural = "3) Recortes RGB/PAN"
+        verbose_name_plural = "(3) Recortes RGB/PAN"
 
 # 4) Pan
 class Pansharpened(models.Model):
@@ -107,4 +109,4 @@ class Pansharpened(models.Model):
         else: return str(self.insumos)
     class Meta:
         verbose_name = "Fusão RGB/PAN"
-        verbose_name_plural = "4) Fusão RGB/PAN"
+        verbose_name_plural = "(4) Fusão RGB/PAN"
