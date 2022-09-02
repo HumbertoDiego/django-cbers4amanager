@@ -516,6 +516,8 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
         if obj.area_util:
             nv = obj.cobertura_nuvens if obj.cobertura_nuvens else 0
             retorno = str(round((obj.area_util - nv)*100/obj.area_util,2))
+        elif int(obj.area_util)==0:
+            retorno = "0.0"
         else:
             retorno = "-"
         return retorno
