@@ -199,3 +199,42 @@ CBERS4AMANAGER = {
     },
     'SAMPLE_FOLDER': 'cbers4amanager/static/cbers4amanager/amostras'
 }
+
+######### CASO Tentando rodar sem Docker, diretamente no SO, deve-se #########
+### Conf BANCO PostgreSQL: 
+#  ip a # Alterar as variáveis de ambiente para apontar para este servidor --> POST_HOST 
+#  apt install postgresql postgis
+#  su postgres # # Alterar as variáveis de ambiente com este username --> POST_USER
+#  psql
+#  postgres=# \password -- # Alterar as variáveis de ambiente com esta senha -> POST_PASSWORD
+#  postgres=# CREATE DATABASE cbers4a;
+#  postgres=# \c cbers4a
+#  cbers4a=# CREATE EXTENSION postgis; 
+#  cbers4a=# CREATE EXTENSION postgis_raster;
+#  cbers4a=# CREATE EXTENSION postgis_sfcgal; 
+### Conf APP Django-Cbers4amanager:
+#  pip install django psycopg2 requests
+
+# Setar as variáveis de ambiente POST_USER, POST_PASSWORD e POST_HOST, Path, PYTHONHOME e OSGEO4W_ROOT
+# Path, PYTHONHOME e OSGEO4W_ROOT --> utilizar uma instalação do QGIS, executar no terminal
+# (alterar de acordo com a versão do QGIS):
+# PS > $env:Path += ';C:\Program Files\QGIS 3.22.5\bin;C:\Program Files\QGIS 3.22.5\apps\Python39;C:\Program Files\QGIS 3.22.5\apps\Python39\Scripts\;C:\Program Files\QGIS 3.22.5\apps\Python39\Lib'
+# PS > $env:PYTHONHOME = r'C:\Program Files\QGIS 3.22.5\apps\Python39'
+# PS > $env:OSGEO4W_ROOT = r'C:\Program Files\QGIS 3.22.5'
+# Encontrar o arquivo libgdal (QGIS) e descomentar abaixo
+#GDAL_LIBRARY_PATH = r'C:\Program Files\QGIS 3.22.5\bin\gdal304.dll'
+
+# CASO:
+# GDAL_ERROR 1: b'PROJ: proj_create_from_database: 
+# C:\\Program Files\\PostgreSQL\\14\\share\\contrib\\postgis-3.2\\proj\\proj.db 
+# contains DATABASE.LAYOUT.VERSION.MINOR = 0 whereas a number >= 2 is expected. 
+# It comes from another PROJ installation.' 
+# SOLUÇÃO, descomentar abaixo (alterar de acordo com a versão do QGIS):
+#os.environ['PROJ_LIB'] = r'C:\Program Files\QGIS 3.22.5\share\proj'
+
+# CASO:
+# ImportError: Could not find the GEOS library (tried "geos_c", "libgeos_c-1"). 
+# Try setting GEOS_LIBRARY_PATH in your settings.
+# SOLUÇÃO, descomentar abaixo (alterar de acordo com a versão do QGIS):
+#os.environ['GEOS_LIBRARY_PATH'] = r'C:\Program Files\QGIS 3.22.5\bin\geos_c.dll'
+#################################################################################

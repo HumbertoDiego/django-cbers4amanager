@@ -155,11 +155,15 @@ class MyDownloadAdmin(OSMGeoAdmin):
             s = """<script>
             function %s() {
                 var ob = document.getElementById("%s");
+                ob.parentElement.parentElement.classList.remove("blink-one");
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = () => {
                     if (xhr.readyState === 4) {
-                    console.log(xhr.response);
-                    ob.textContent = xhr.response;
+                        console.log(xhr.response);
+                        if (ob.textContent != xhr.response){
+                            ob.textContent = xhr.response;
+                            ob.parentElement.parentElement.classList.add("blink-one");
+                        }
                     }
                 }
                 xhr.open("GET", "/get_progresso/%s/");

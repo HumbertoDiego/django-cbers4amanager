@@ -1,0 +1,19 @@
+{% extends 'admin/base.html' %}
+{% block branding %}
+<h1 id="site-name"><a href="/admin/">Django administration</a></h1>
+    {% block extrastyle %}
+    <style>
+        .blink-one {
+            animation: blinker 1.5s linear;
+        }
+        @keyframes blinker {
+            5% {
+                background-color: green;
+            }
+            100% {
+                background-color: unset;
+            }
+        }
+    </style>
+    {% endblock %}
+{% endblock %}
