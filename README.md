@@ -32,7 +32,7 @@ docker-compose restart
 
 <img src="pics/fluxo.png" alt="fluxo" style="height:200px;"/>
 
-3. O programa `pop_processes.py` insere o agendamento necessário nas tabelas `process e task`.
+3. O programa `pop_processes.py` insere o agendamento necessário nas tabelas `process` e `task`.
 
 <img src="pics/agenda.jpg" alt="agenda" style="height:300px;"/>
 
