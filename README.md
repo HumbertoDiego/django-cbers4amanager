@@ -36,14 +36,14 @@ docker-compose restart
 
 <img src="pics/agenda.jpg" alt="agenda" style="height:300px;"/>
 
-3. Inserir as informações do projeto. Os limites cadastrados não são utilizados nas etapas seguintes, servindo apenas para fins de visualização.
-4. Inserir as áreas de interesse. Os limites cadastrados são usados para recortar as imagens RGB e PAN em processos subsequentes, de forma que a fusão resultante tenha um tamanho razoalvelmente menor.
-5. Inserir as urls de download:
+4. Inserir as informações do projeto. Os limites cadastrados não são utilizados nas etapas seguintes, servindo apenas para fins de visualização.
+5. Inserir as áreas de interesse. Os limites cadastrados são usados para recortar as imagens RGB e PAN em processos subsequentes, de forma que a fusão resultante tenha um tamanho razoalvelmente menor.
+6. Inserir as urls de download:
     * Pesquisar em [DGI INPE](http://www2.dgi.inpe.br/catalogo/explore) e baixar do carrinho os links (inpe_catalog.txt)
     * Utilizar a opção `Import TXT` para importar as URLS em lote
-6. Para popular `projeto`, `areas de interesse` e `downlodas` com dados amostrais execute: 
+7. Para popular `projeto`, `areas de interesse` e `downlodas` com dados amostrais execute: 
     * `docker-compose exec app python cbers4amanager/management/amostra/pop_amostra.py`
-7. Checar as tarefas sendo executadas:
+8. Checar as tarefas sendo executadas:
     * `docker-compose exec app ps -auxw`
       * bash ./my_wrapper_script.sh
       * python manage.py runserver 0.0.0.0:81
