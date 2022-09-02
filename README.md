@@ -28,9 +28,12 @@ docker-compose restart
 ## Fluxo de tabalho
 
 1. Navegar para a página `http://<IP>:81/admin`, realizar o LOGIN com as credenciais de superusuário criadas.
-2. As tabelas estão nomeadas na ordem dos trabalhos e o programa `pop_processes.py` insere o agendamento necessário nas tabelas `process e task` .
+2. As tabelas estão nomeadas na ordem dos trabalhos.
 
-<img src="pics/fluxo.png" alt="fluxo" style="height:300px;"/>
+<img src="pics/fluxo.png" alt="fluxo" style="height:200px;"/>
+
+3. O programa `pop_processes.py` insere o agendamento necessário nas tabelas `process e task`.
+
 <img src="pics/agenda.jpg" alt="agenda" style="height:300px;"/>
 
 3. Inserir as informações do projeto. Os limites cadastrados não são utilizados nas etapas seguintes, servindo apenas para fins de visualização.
