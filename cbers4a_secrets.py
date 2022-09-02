@@ -1,1 +1,1 @@
-DJANGO_SECRET_KEY= "qqcoisa"
+#DJANGO_SECRET_KEY= "qqcoisa"
