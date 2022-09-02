@@ -150,7 +150,33 @@ class MyDownloadAdmin(OSMGeoAdmin):
         return int2size(obj.content_length)
     @admin.display(ordering='progresso')   
     def _progresso(self, obj):
-        return int2size(obj.progresso)
+        if obj.progresso!=obj.content_length and obj.progresso:
+            h = """<span id="%s">%s</span>"""%(str(obj.id)+"_progresso",int2size(obj.progresso))
+            s = """<script>
+            function %s() {
+                var ob = document.getElementById("%s");
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                    console.log(xhr.response);
+                    ob.textContent = xhr.response;
+                    }
+                }
+                xhr.open("GET", "/get_progresso/%s/");
+                xhr.send();
+                setTimeout(%s, 10000);
+            }
+            %s();
+            </script>"""%(
+                "get_progresso_"+str(obj.id),
+                str(obj.id)+"_progresso",
+                str(obj.id),
+                "get_progresso_"+str(obj.id),
+                "get_progresso_"+str(obj.id)
+                )
+            return mark_safe('<div>%s %s</div>'%(h,s))
+        else:
+            return int2size(obj.progresso)
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
@@ -346,7 +372,7 @@ class PostgreSQLGroupConcat(Aggregate):
 class MyComposicaoRGBadmin(OSMGeoAdmin):
     search_fields = ['rgb']
     actions = [set_bounds_rgb]
-    list_display = ('_nome', 'finalizado')
+    list_display = ('_nome', 'finalizado','_download')
     change_list_template = "cbers4amanager/composicaorgb_changelist.html"
     def get_urls(self):
         urls = super().get_urls()
@@ -364,6 +390,12 @@ class MyComposicaoRGBadmin(OSMGeoAdmin):
                     ,os.path.basename(obj.rgb)
                 ))
         return super(MyComposicaoRGBadmin, self).render_change_form(request, context, *args, **kwargs)
+    @admin.display(ordering='finalizado')
+    def _download(self,obj):
+        if obj.rgb:
+            return mark_safe('<a href="{}"><img src="/static/admin/img/icon-viewlink.svg" alt="View"></a>'.format(reverse('admin:cbers4amanager_composicaorgb_download-file', args=[obj.pk])))
+        else:
+            return "-"
     @admin.display(ordering='nome_base')
     def _nome(self,obj):
         return str(obj.red.nome_base or obj.green.nome_base or obj.blue.nome_base or obj.nome_base)+"_RGB.tif"
@@ -473,8 +505,17 @@ admin.site.register(ComposicaoRGB,MyComposicaoRGBadmin)
 class MyINOMClipperedAdmin(admin.ModelAdmin):
     actions = ['comecar_recortes_rgb','comecar_recortes_pan',set_finalizado]
     search_fields = ['nome']
-    list_display = ('nome', '_recorte_rgb', '_recorte_pan', 'area_util', 'cobertura_nuvens', 'finalizado')
+    list_display = ('nome', '_recorte_rgb', '_recorte_pan', '_area_util', 'finalizado')
     change_list_template = "cbers4amanager/inomclippered_changelist.html"
+    @admin.display(ordering='area_util')
+    def _area_util(self,obj):
+        if obj.area_util:
+            nv = obj.cobertura_nuvens if obj.cobertura_nuvens else 0
+            retorno = str(round((obj.area_util - nv)*100/obj.area_util,2))
+        else:
+            retorno = "-"
+        return retorno
+    _area_util.short_description = 'Área Útil (%)'
     @admin.display(ordering='recorte_rgb')
     def _recorte_rgb(self,obj):
         if not obj.recorte_rgb:
@@ -534,6 +575,7 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
         queryset = INOM.objects.filter(bounds__intersects=poly)
         return queryset
     def get_composicao(self, request):
+        msg=""
         rgbs_ja_registrados_para_recorte = INOMClippered.objects.values('rgb').all()
         n_registrar_esses_ids = list(set([i['rgb'] for i in rgbs_ja_registrados_para_recorte]))
         queryset = ComposicaoRGB.objects.filter(finalizado=True).exclude(id__in=n_registrar_esses_ids)
@@ -546,6 +588,9 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
                 except:
                     continue
                 print(inoms)
+                if not inoms: 
+                    msg += ": Sem interseção com áreas de interesse."
+                    continue
                 for inom in inoms.all():
                     if not INOMClippered.objects.filter(nome=comprgb.nome_base+"_"+inom.inom):
                         i = INOMClippered(nome=comprgb.nome_base+"_"+inom.inom,inom=inom,rgb=comprgb)
@@ -555,7 +600,7 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
                             pass
                         i.save()
                         count+=1
-            self.message_user(request, "Adicionados %s registros"%(count))
+            self.message_user(request, "Adicionados %s registros%s"%(count,msg))
             return redirect("..")
         payload = {'queryset':queryset,'opts': self.model._meta}
         return render(
@@ -598,10 +643,16 @@ admin.site.register(INOMClippered,MyINOMClipperedAdmin)
 
 class MyPansharpenedAdmin(admin.ModelAdmin):
     actions = ['comecar_pansharp']
-    list_display = ('_nome', 'finalizado')
+    list_display = ('_nome', 'finalizado','_download')
     change_list_template = "cbers4amanager/pansharp_changelist.html"
     readonly_fields = ('download_link',)
     fields = ('insumos','pansharp', 'finalizado','download_link')
+    @admin.display(ordering='pansharp')
+    def _download(self,obj):
+        if obj.pansharp:
+            return mark_safe('<a href="{}"><img src="/static/admin/img/icon-viewlink.svg" alt="View"></a>'.format(reverse('admin:cbers4amanager_pansharpened_download_pansharp', args=[obj.pk])))
+        else:
+            return "-"
     @admin.display(ordering='pansharp')
     def _nome(self,obj):
         if obj.pansharp: return os.path.basename(obj.pansharp)
@@ -648,6 +699,7 @@ class MyPansharpenedAdmin(admin.ModelAdmin):
             for inomclippered in queryset.all():
                 p = Pansharpened(insumos=inomclippered)
                 p.save()
+                count += 1
             self.message_user(request, "Adicionados %s registros"%(count))
             return redirect("..")
         payload = {'queryset':queryset,'opts': self.model._meta}

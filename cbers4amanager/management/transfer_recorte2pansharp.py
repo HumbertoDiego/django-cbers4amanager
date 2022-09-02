@@ -17,6 +17,7 @@ def get_recortes(classe, requisicao):
     for inomclippered in queryset.all():
         p = Pansharpened(insumos=inomclippered)
         p.save()
+        count +=1
     print("Adicionados %s registros"%(count))
     
 if __name__ == '__main__':

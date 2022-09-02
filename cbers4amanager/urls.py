@@ -18,4 +18,5 @@ urlpatterns = [
             'document_root': settings.CBERS4AMANAGER['SAMPLE_FOLDER'],
             'show_indexes': True
         }),
+    path('get_progresso/<d_id>/', views.get_progresso, name='get_progresso')
 ]

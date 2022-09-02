@@ -17,7 +17,7 @@ def main(pks):
         if pan.finalizado: continue
         input_pan = pan.insumos.recorte_pancromatica
         input_rgb = pan.insumos.recorte_rgb
-        out = os.path.join(settings.MEDIA_ROOT,'pansharp',pan.insumos.nome+"_PANSHARPENED.tif")
+        out = os.path.join(settings.MEDIA_ROOT,'a','pansharp',pan.insumos.nome+"_PANSHARPENED.tif")
         comando = 'gdal_pansharpen'
         comando += '.bat' if os.name=='nt' else '.py'
         comando += ' "{input_pan}" "{input_rgb}" "{out}" '.format(input_pan=input_pan,input_rgb=input_rgb,out=out)

@@ -10,11 +10,11 @@ django.setup()
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import GEOSGeometry
 
-from cbers4amanager.models import INOMClippered, ComposicaoRGB, INOM
+from cbers4amanager.models import INOMClippered, ComposicaoRGB, INOM, Download
 		
-def getIntersection(comprgb):
+def getIntersection(pan):
         #print(comprgb)
-        rst = GDALRaster(comprgb.rgb, write=False)
+        rst = GDALRaster(pan.arquivo, write=False)
         xmin, ymin, xmax, ymax = rst.extent
         pol = 'POLYGON(({xmin} {ymin},{xmax} {ymin},{xmax} {ymax},{xmin} {ymax},{xmin} {ymin}))'.format(xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)
         poly = GEOSGeometry(pol,srid=rst.srid)
@@ -22,29 +22,34 @@ def getIntersection(comprgb):
         return queryset
 
 def get_composicao(classe, requisicao):
-    rgbs_ja_registrados_para_recorte = INOMClippered.objects.values('rgb').all()
-    n_registrar_esses_ids = list(set([i['rgb'] for i in rgbs_ja_registrados_para_recorte]))
-    queryset = ComposicaoRGB.objects.filter(finalizado=True).exclude(id__in=n_registrar_esses_ids)
+    msg=""
+    pans_cujo_ao_menos_rgb_ja_registrado_para_recorte = INOMClippered.objects.values('pancromatica').all()
+    n_registrar_esses_ids = list(set([i['pancromatica'] for i in pans_cujo_ao_menos_rgb_ja_registrado_para_recorte if i['pancromatica'] ]))
+    queryset = Download.objects.filter(finalizado=True,tipo='pan').exclude(id__in=n_registrar_esses_ids)
     # create Genere object from passed in data
     count = 0
-    for comprgb in queryset.all():
+    for pan in queryset.all():
         try:
-            inoms = getIntersection(comprgb)
-        except:
+            inoms = getIntersection(pan)
+        except Exception as e:
+            print(str(e))
             continue
         print(inoms)
+        if not inoms: 
+            msg += ": Sem interseção com áreas de interesse."
+            continue
         for inom in inoms.all():
-            i = INOMClippered.objects.filter(nome=comprgb.nome_base+"_"+inom.inom)
+            # já tem que ter no min uma RGB cadastrada pra encontrar:
+            i = INOMClippered.objects.get(nome=pan.nome_base+"_"+inom.inom)
             if i:
                 try:
-                    i.pancromatica = Download.objects.filter(finalizado=True).get(nome_base__iexact=comprgb.nome_base,tipo='pan')
+                    i.pancromatica = pan
                     i.save()
                     count+=1
-                except:
+                except Exception as e:
+                    print(str(e))
                     pass
-    print("Adicionados %s registros"%(count))
-    
-    
+    print("Adicionados %s registros%s"%(count,msg))
 
 if __name__ == '__main__':
 	get_composicao(None,None)

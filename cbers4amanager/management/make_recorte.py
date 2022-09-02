@@ -47,7 +47,7 @@ def getNuvens(fname,m):
     #TODO
     comando += '--calc="(A>{r})*(B>{g})*(C>{b})" --co NBITS=1 --type Byte '
     #comando += "--calc='A+B+C>{soma}' "         
-    comando += " --outfile {out} --overwrite --NoDataValue 0"
+    comando += " --outfile {out} --overwrite --quiet --NoDataValue 0"
     comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),delta=fdelta*sum(m),out=out)
     print(comando)
     os.system(comando)
@@ -61,6 +61,7 @@ def main(pks,final_do_nome):
             print(e)
             continue
         if rec.finalizado: continue
+        if "PAN" in final_do_nome and not rec.pancromatica: continue
         out = os.path.join(settings.MEDIA_ROOT,'a','recortes',rec.nome+final_do_nome)
         clipper = rec.inom.bounds
         try:
@@ -69,11 +70,6 @@ def main(pks,final_do_nome):
             print(e)
             continue
         xmin, ymin, xmax, ymax = clipper.extent
-        """
-        BUG: não adianta setar o proj_lib no ambiente django com os.environ['PROJ_LIB'] = ...
-        se estou usando os.system pra executar o gdal
-        FIX: o sistema operacional tem que usar o proj_lib do QGIS 
-        """ 
         comando = 'gdal_translate -a_nodata 0.0 -projwin '#<ulx> <uly> <lrx> <lry>
         comando += '%s %s %s %s -projwin_srs EPSG:%s -of GTiff '%(xmin,ymax,xmax,ymin,clipper.srid)
         comando += '%s %s'%(clipee,out)
@@ -103,8 +99,8 @@ def main(pks,final_do_nome):
             rec.cobertura_nuvens = area_util
             rec.save()
         l = settings.CBERS4AMANAGER['LIMITS']
-        if rec.rgb and rec.pancromatica:
-            if rec.area_util>float(l['min_area_util_percent']) and rec.cobertura_nuvens<float(l['max_area_nuvens_percent']) :
+        if rec.rgb and rec.pancromatica and rec.recorte_rgb and rec.recorte_pancromatica:
+            if rec.area_util>float(l['min_area_com_dados_percent']) and rec.cobertura_nuvens<float(l['max_area_nuvens_percent']) :
                 rec.finalizado = True
                 rec.save()
         print("TERMINADO:",rec)

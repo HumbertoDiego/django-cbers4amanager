@@ -70,7 +70,7 @@ def main():
         level=1,
         offset='5%',
         interpreter='python',
-        arguments='--todos',
+        arguments='',
         process_id=p2.id
     )
     path = Path('cbers4amanager/management/transfer_download2composicaorgb.py')
@@ -174,22 +174,22 @@ def main():
         t.save()
     #####################
     p6=Process(
-        name='Toda dia (4ª hora)',
-        description='Toda dia (4ª hora)',
+        name='Toda hora (50º min)',
+        description='Toda hora (50º min)',
         run_if_err=True,
-        minute='0',
-        hour='4',
+        minute='50',
+        hour='*',
         day_of_month='*',
         month='*',
         day_of_week='*',
-        chart_height=0
+        chart_height=1
     )
     p6.save()
     t = Task(
         name='Recorte PAN',
         description='Execução dos recortes das bandas PAN cadastrados e não finalizados na tabela Recortes RGB/PAN',
         is_active=True,
-        level=0,
+        level=1,
         offset='0%',
         interpreter='python',
         arguments='--todos --pan',
@@ -201,15 +201,15 @@ def main():
         t.save()
     #####################
     p7=Process(
-        name='Toda dia (5ª hora)',
-        description='Toda dia (5ª hora)',
+        name='Toda hora (55º min)',
+        description='Toda hora (55º min)',
         run_if_err=True,
-        minute='0',
-        hour='5',
+        minute='55',
+        hour='*',
         day_of_month='*',
         month='*',
         day_of_week='*',
-        chart_height=0
+        chart_height=2
     )
     p7.save()
     t = Task(
@@ -219,7 +219,7 @@ def main():
         level=0,
         offset='0%',
         interpreter='python',
-        arguments='--todos --pan',
+        arguments='',
         process_id=p7.id
     )
     path = Path('cbers4amanager/management/transfer_recorte2pansharp.py')
@@ -228,6 +228,33 @@ def main():
         t.save()
     #####################
     p8=Process(
+        name='Toda hora (57º min)',
+        description='Toda hora (57º min)',
+        run_if_err=True,
+        minute='57',
+        hour='*',
+        day_of_month='*',
+        month='*',
+        day_of_week='0',
+        chart_height=0
+    )
+    p8.save()
+    t = Task(
+        name='Fusão RGB/PAN',
+        description='Executar a fusão IHS (Panshapening) das imagens cadastradas na tabela Fusão RGB/PAN',
+        is_active=True,
+        level=0,
+        offset='0%',
+        interpreter='python',
+        arguments='--todos',
+        process_id=p8.id
+    )
+    path = Path('cbers4amanager/management/make_pansharp.py')
+    with path.open(mode='rb') as f:
+        t.code = File(f, name=path.name)
+        t.save()
+    #####################
+    p9=Process(
         name='Semanalmente (dom)',
         description='Semanalmente (dom 00:02)',
         run_if_err=True,
@@ -238,7 +265,7 @@ def main():
         day_of_week='0',
         chart_height=0
     )
-    p8.save()
+    p9.save()
     t = Task(
         name='Remover Bandas',
         description='Deletar os downloads das bandas RGB que já resultaram em uma composição RGB',
@@ -247,7 +274,7 @@ def main():
         offset='0%',
         interpreter='python',
         arguments='--todos --rgb',
-        process_id=p8.id
+        process_id=p9.id
     )
     path = Path('cbers4amanager/management/rm_download.py')
     with path.open(mode='rb') as f:

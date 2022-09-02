@@ -194,7 +194,7 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o775
 CBERS4AMANAGER = {
     'LIMITS': {
         'max_storage':'1T',
-        'min_area_util_percent':'45.0',
+        'min_area_com_dados_percent':'45.0',
         'max_area_nuvens_percent':'20.0',
     },
     'SAMPLE_FOLDER': 'cbers4amanager/static/cbers4amanager/amostras'
