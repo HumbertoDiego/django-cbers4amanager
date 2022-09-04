@@ -3,6 +3,7 @@ import os
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.html import mark_safe
+from django.dispatch import receiver
 
 # -1) Projetos
 class Projeto(models.Model):
@@ -42,12 +43,19 @@ class Download(models.Model):
     progresso = models.BigIntegerField(blank=True, null=True )
     arquivo = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/bandas'),blank=True, null=True)
     bounds = models.PolygonField(blank=True, null=True )
+    prioridade = models.IntegerField(blank=True, null=True, default=999 )
     finalizado = models.BooleanField(default=False,blank=True, null=True )
     def __str__(self):
         return str(self.nome)
     class Meta:
         verbose_name = "Download"
         verbose_name_plural = "(1) Downloads"
+    
+@receiver(models.signals.post_delete, sender=Download)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    if instance.arquivo:
+        if os.path.isfile(instance.arquivo):
+            os.remove(instance.file.path)
 
 # 2.1)
 class ComposicaoRGB(models.Model):

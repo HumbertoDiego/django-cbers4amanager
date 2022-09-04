@@ -11,7 +11,7 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.gdal import GDALRaster
 from django.db import IntegrityError
 from django.contrib import messages
-from process.models import Process, Job, Task
+from process.models import Process, Job, Task, JobTask
 import os
 from django.core.files.base import ContentFile
 from django.utils import timezone
@@ -99,7 +99,6 @@ def set_finalizado(modeladmin, request, queryset):
 def set_nao_finalizado(modeladmin, request, queryset):
     queryset.update(finalizado=False,iniciado_em=None,terminado_em=None,progresso=None,arquivo=None)
 
-
 @admin.action(description='Update name, base_name e tipo de acordo com a url')
 def set_names(modeladmin, request, queryset):
     for e in queryset:
@@ -137,7 +136,7 @@ def int2size(content_length):
         retorno = "{:.2f}".format(content_length/1000000000.0)+" GB"
     return retorno
 class MyDownloadAdmin(OSMGeoAdmin):
-    actions = [set_finalizado,set_nao_finalizado,set_names,'comecar_download',set_bounds]
+    actions = [set_finalizado,set_nao_finalizado,set_names,'priorizar_download',set_bounds]
     list_display = ('_nome', 'tipo', 'iniciado_em','_content_length','_progresso','finalizado')
     search_fields = ['nome', 'tipo' ]
     list_filter = ('finalizado', 'tipo')
@@ -219,53 +218,22 @@ class MyDownloadAdmin(OSMGeoAdmin):
             # handle file not exist case here
             response = HttpResponseNotFound('<h1>File not exist</h1>')
         return response
-    @admin.action(description='Começar Download')
-    def comecar_download(self, request, queryset):
+    @admin.action(description='Priorizar Download')
+    def priorizar_download(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
-            aux = [str(q.pk) for q in queryset]
-            # TODO: Proteger aqui
-            try:
-                process = Process.objects.get(name="Download")
-            except:
-                process = Process(name="Download",description="Todo minuto",run_if_err=True,
-                                minute="*",hour="*",day_of_month="*",month="*",day_of_week="*")
-                process.save()
-            # DONE: Verificar se o id já está em description de um Task ativo
-            ids = []
-            for i in range(len(aux)):
-                try:
-                    q = Task.objects.filter(process=process).get(description__contains="'"+aux[i]+"'")
-                    # Existe ativo, então não cria outro
-                except Task.DoesNotExist as e:
-                    # Não existe ativo, então cria outro
-                    ids.append(aux[i])
-                    continue
-            last = Task.objects.order_by('-id').first()
-            next_id = last.id + 1 if last else 1
-            t = Task(process=process,name="Download "+str(next_id), description= "Download dos itens: %s"%(ids),
-                    interpreter= os.popen('which python3').read().replace('\n',''),
-                    arguments = " ".join(ids))
-            path = os.path.join(os.getcwd(),'cbers4amanager/management/download_cbers4a.py')
-            with open(path, "rb") as py:
-                t.code= ContentFile(py.read(), name=os.path.basename(path))
-            try:
-                t.save()
-                self.message_user(request,
-                                    "Download de %s iniciado."%(ids), 
-                                    messages.SUCCESS)
-            except IntegrityError as e:
-                self.message_user(request,
-                                    "Processo já existe. Reiniciando...", 
-                                    messages.WARNING)
-                pass
-            job, tasks = Job.create(process)
+            queryset.update(prioridade=1)
+            # STOP current downloads
+            # Tb Encerra os related JOBs com erro, abrindo caminho pra um novo Job daqui a 1 minuto
+            comando = "kill $(ps -auxw | grep make_download | grep -v grep | awk '/python/ {print $2}')"
+            print(comando)
+            os.system(comando)
         else:
             request.current_app = self.admin_site.name
             context = {
                 'action':request.POST.get("action"),
                 'queryset':queryset,
                 'opts': self.model._meta,
-                'tarefa': "DOWNLOAD"
+                'tarefa': "PRIORIZAR"
             } 
             return render(request, "admin/download_confirmation.html", context)
     def import_txt(self, request):
@@ -516,6 +484,8 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
         if obj.area_util:
             nv = obj.cobertura_nuvens if obj.cobertura_nuvens else 0
             retorno = str(round((obj.area_util - nv)*100/obj.area_util,2))
+        elif obj.area_util==None:
+            retorno = "-"
         elif int(obj.area_util)==0:
             retorno = "0.0"
         else:

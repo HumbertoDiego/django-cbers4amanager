@@ -10,7 +10,7 @@ django.setup()
 from django.contrib.gis.gdal import GDALRaster
 from django.contrib.gis.geos import GEOSGeometry
 
-from cbers4amanager.models import INOMClippered, ComposicaoRGB, INOM
+from cbers4amanager.models import INOMClippered, ComposicaoRGB, INOM, Download
 		
 def getIntersection(comprgb):
         #print(comprgb)
@@ -22,7 +22,7 @@ def getIntersection(comprgb):
         return queryset
 
 def get_composicao(classe, requisicao):
-    msg=""
+    err=""
     rgbs_ja_registrados_para_recorte = INOMClippered.objects.values('rgb').all()
     n_registrar_esses_ids = list(set([i['rgb'] for i in rgbs_ja_registrados_para_recorte]))
     queryset = ComposicaoRGB.objects.filter(finalizado=True).exclude(id__in=n_registrar_esses_ids)
@@ -35,7 +35,7 @@ def get_composicao(classe, requisicao):
             continue
         print(inoms)
         if not inoms: 
-            msg += ": Sem interseção com áreas de interesse."
+            err += ": Sem interseção com áreas de interesse."
             continue
         for inom in inoms.all():
             if not INOMClippered.objects.filter(nome=comprgb.nome_base+"_"+inom.inom):
@@ -46,7 +46,7 @@ def get_composicao(classe, requisicao):
                     pass
                 i.save()
                 count+=1
-    print("Adicionados %s registros%s"%(count,msg))
+    print("Adicionados %s registros%s"%(count,err if not count else ""))
     
     
 
