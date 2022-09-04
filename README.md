@@ -65,8 +65,9 @@ docker-compose restart
     * make_recorte.py --todos --pan
     * transfer_recorte2pansharp.py
     * make_pansharp.py --todos
+    * rm_insumos.py
  
-    Onde --todos seleciona os IDS dos elementos não finalizados para execução. Podendo ser substituídos pelo IDS desejados.
+    Onde --todos seleciona os IDS dos elementos não finalizados para execução. Podendo ser substituídos pelo IDs desejados.
 
 3. A qualquer momento pode-se executá-los através do terminal, por exemplo:
     * `docker-compose exec app bash`
