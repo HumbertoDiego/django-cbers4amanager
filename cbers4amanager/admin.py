@@ -483,7 +483,7 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
     def _area_util(self,obj):
         if obj.area_util:
             nv = obj.cobertura_nuvens if obj.cobertura_nuvens else 0
-            retorno = str(round((obj.area_util - nv)*100/obj.area_util,2))
+            retorno = str(round((obj.area_util - nv),2))
         elif obj.area_util==None:
             retorno = "-"
         elif int(obj.area_util)==0:
@@ -618,13 +618,12 @@ admin.site.register(INOMClippered,MyINOMClipperedAdmin)
 
 
 class MyPansharpenedAdmin(admin.ModelAdmin):
-    actions = ['comecar_pansharp']
-    list_display = ('_nome', 'finalizado','_download')
+    actions = ['comecar_pansharp','set_finalizado']
+    list_display = ('_nome', 'finalizado','_resultado')
     change_list_template = "cbers4amanager/pansharp_changelist.html"
-    readonly_fields = ('download_link',)
-    fields = ('insumos','pansharp', 'finalizado','download_link')
+    fields = ('insumos','pansharp', 'finalizado')
     @admin.display(ordering='pansharp')
-    def _download(self,obj):
+    def _resultado(self,obj):
         if obj.pansharp:
             return mark_safe('<a href="{}"><img src="/static/admin/img/icon-viewlink.svg" alt="View"></a>'.format(reverse('admin:cbers4amanager_pansharpened_download_pansharp', args=[obj.pk])))
         else:
@@ -634,8 +633,14 @@ class MyPansharpenedAdmin(admin.ModelAdmin):
         if obj.pansharp: return os.path.basename(obj.pansharp)
         else: return str(obj.insumos)
     def render_change_form(self, request, context, *args, **kwargs):
-         context['adminform'].form.fields['pansharp'].queryset = Download.objects.filter(nome__contains='BAND0')
-         return super(MyPansharpenedAdmin, self).render_change_form(request, context, *args, **kwargs)
+        obj = context['original']
+        if obj is not None:
+            if obj.pansharp is not None:
+                context['adminform'].form.fields['pansharp'].help_text += mark_safe('<br><a href="{}" target="blank">{}</a>'.format(
+                    reverse('admin:cbers4amanager_pansharpened_download_pansharp', args=[obj.pk])
+                    ,os.path.basename(obj.pansharp)
+                ))
+        return super(MyPansharpenedAdmin, self).render_change_form(request, context, *args, **kwargs)
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
@@ -643,14 +648,6 @@ class MyPansharpenedAdmin(admin.ModelAdmin):
             re_path(r'download-file/(?P<pk>\d+)$', self.download_file, name='cbers4amanager_pansharpened_download_pansharp')
         ]
         return my_urls + urls
-    def download_link(self, obj):
-        if obj.id is not None:
-            return mark_safe(
-                '<a href="{}">Download file</a>'.format(reverse('admin:cbers4amanager_pansharpened_download_pansharp', args=[obj.pk]))
-            ) 
-        else:
-            return '-'
-    download_link.short_description = "Download resultado"
     def download_file(self, request, pk):
         p = Pansharpened.objects.get(pk=pk)
         arquivo = p.pansharp
@@ -696,6 +693,9 @@ class MyPansharpenedAdmin(admin.ModelAdmin):
                 'tarefa': "PANSHARP"
             } 
             return render(request, "admin/recorte_confirmation.html", context)
+    @admin.action(description='Update finalizado=True das linhas selecionadas')
+    def set_finalizado(modeladmin, request, queryset):
+        queryset.update(finalizado=True)
     
 
 

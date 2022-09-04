@@ -50,12 +50,12 @@ class Download(models.Model):
     class Meta:
         verbose_name = "Download"
         verbose_name_plural = "(1) Downloads"
-    
+
 @receiver(models.signals.post_delete, sender=Download)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
     if instance.arquivo:
         if os.path.isfile(instance.arquivo):
-            os.remove(instance.file.path)
+            os.remove(instance.arquivo)
 
 # 2.1)
 class ComposicaoRGB(models.Model):
@@ -71,6 +71,12 @@ class ComposicaoRGB(models.Model):
     class Meta:
         verbose_name = "Composição RGB"
         verbose_name_plural = "(2) Composições RGB"
+
+@receiver(models.signals.post_delete, sender=ComposicaoRGB)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    if instance.rgb:
+        if os.path.isfile(instance.rgb):
+            os.remove(instance.rgb)
 
 # 2.2)
 # class ComposicaoNDVI(models.Model):
@@ -104,6 +110,14 @@ class INOMClippered(models.Model):
         verbose_name = "Recorte RGB/PAN"
         verbose_name_plural = "(3) Recortes RGB/PAN"
 
+@receiver(models.signals.post_delete, sender=INOMClippered)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    if instance.recorte_rgb:
+        if os.path.isfile(instance.recorte_rgb):
+            os.remove(instance.recorte_rgb)
+    if instance.recorte_pancromatica:
+        if os.path.isfile(instance.recorte_pancromatica):
+            os.remove(instance.recorte_pancromatica)
 # 4) Pan
 class Pansharpened(models.Model):
     insumos = models.ForeignKey(INOMClippered, on_delete=models.SET_NULL, blank=True, null=True)
@@ -111,10 +125,17 @@ class Pansharpened(models.Model):
                                     blank=True, null=True, match='(.*).tif', max_length=300,
                                     help_text='Este arquivo será criado após escolher a opção "Começar Fusão RGB/PAN das linhas selecionadas". ',
     )
-    finalizado = models.BooleanField(default=False,blank=True, null=True )
+    finalizado = models.BooleanField(default=False,blank=True, null=True,help_text='Determina a exclusão agendada dos insumos (Downloads, Composições RGB e Recortes) que originaram este arquivo. ', )
+
     def __str__(self):
         if self.pansharp: return os.path.basename(self.pansharp)
         else: return str(self.insumos)
     class Meta:
         verbose_name = "Fusão RGB/PAN"
         verbose_name_plural = "(4) Fusão RGB/PAN"
+
+@receiver(models.signals.post_delete, sender=Pansharpened)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    if instance.pansharp:
+        if os.path.isfile(instance.pansharp):
+            os.remove(instance.pansharp)
