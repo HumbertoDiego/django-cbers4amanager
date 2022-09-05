@@ -16,7 +16,6 @@
             {{ form.as_p }}
             {% csrf_token %}
             <li style="color:red">Os arquivos já existentes com o mesmo nome serão sobrescritos caso Finalizado=False!</li>
-            <li style="color:green">Atentar para a estrutura do nome do arquivo (Ex: CBERS_4A_WPM_20220622_238_126_L4_BAND4.tif), dele são retirados informações de tipo de banda, nome base e data da imagem.</li>
             <br>
             <input type="submit" value="Importar">
         </form>

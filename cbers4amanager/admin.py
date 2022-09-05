@@ -12,7 +12,7 @@ from django.contrib.gis.gdal import GDALRaster
 from django.db import IntegrityError
 from django.contrib import messages
 from process.models import Process, Job, Task, JobTask
-import os
+import os, re
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.db.models import CharField
@@ -122,7 +122,7 @@ def set_bounds(modeladmin, request, queryset):
 class CsvImportForm(forms.Form):
     file = forms.FileField()
 class TextForm(forms.Form):
-    caminho = forms.CharField()
+    caminho = forms.CharField(initial='/app/uploads/a/bandas/')
 def int2size(content_length):
     if not content_length:
         retorno = "-"
@@ -184,6 +184,7 @@ class MyDownloadAdmin(OSMGeoAdmin):
         urls = super().get_urls()
         my_urls = [
             path('import-txt/', self.import_txt),
+            path('import-tiffs-de-pasta-do-servidor/', self.import_tiffs_de_pasta_do_servidor),
             path('import-tiffs-de-pasta-local/', self.import_tiffs_de_pasta_local),
             re_path(r'download-file/(?P<pk>\d+)$', self.download_file, name='cbers4amanager_download_download-file'),
         ]
@@ -262,7 +263,7 @@ class MyDownloadAdmin(OSMGeoAdmin):
         return render(
             request, "admin/upload_form.html", payload
         )
-    def import_tiffs_de_pasta_local(self, request):
+    def import_tiffs_de_pasta_do_servidor(self, request):
         if request.method == "POST":
             # create Genere object from passed in data
             caminho = request.POST["caminho"]
@@ -279,9 +280,6 @@ class MyDownloadAdmin(OSMGeoAdmin):
                     d = Download.objects.get(nome__contains=f)
                     if d.finalizado: continue
                     if d.progresso==size: continue
-                    # obsoleto qd este campo se tornou FilePath:
-                    # with open(fullfname, "rb") as tif:
-                    #     d.arquivo= ContentFile(tif.read(), name=f)
                     dst = os.path.join(Download._meta.get_field('arquivo').path,f)
                     if dst!=fullfname: os.rename(fullfname, dst)
                     d.arquivo = dst
@@ -295,11 +293,6 @@ class MyDownloadAdmin(OSMGeoAdmin):
                     nome_base = f.split("_BAND")[0]
                     tipo = "red" if "BAND3" in f else "green" if "BAND2" in f else "blue" if "BAND1" in f else "pan" if "BAND0" in f else ""
                     d = Download(url=fullfname,nome=f,nome_base=nome_base,tipo=tipo,finalizado=True,terminado_em = timezone.now())
-                    ## obsoleto qd este campo se tornou FilePath:
-                    # with open(fullfname, "rb") as tif:
-                    #     d.arquivo= ContentFile(tif.read(), name=f)
-                    #     d.content_length = size
-                    #     d.progresso = size
                     dst = os.path.join(Download._meta.get_field('arquivo').path,f) # Inofensivo se o destino=origem
                     if dst!=fullfname: os.rename(fullfname, dst)
                     d.arquivo = dst
@@ -310,15 +303,55 @@ class MyDownloadAdmin(OSMGeoAdmin):
                     except Exception as e:
                         print(str(e))
                         continue
-
             self.message_user(request,
              "Adicionados/Modificados/Encontrados (%s/%s/%s) registros de arquivos .tifs em %s"%(a,m,len(onlytifsfiles),caminho))
             return redirect("..")
         form = TextForm()
         payload = {"form": form,'opts': self.model._meta,}
         return render(
+            request, "admin/pasta_do_serv_tiffs_form.html", payload
+        )
+    def import_tiffs_de_pasta_local(self, request):
+        if request.method == "POST":
+            # create Genere object from passed in data
+            f = request.FILES["file"]
+            nome = f._name
+            dst = os.path.join(Download._meta.get_field('arquivo').path,nome)
+            a,m = 0,0
+            if nome.split(".")[-1] in ["tif","TIF","tiff","TIFF"]: 
+                if len(re.findall(r"CBERS_4A_WPM_\d{8}_\d*_\d*_L4_BAND[0-4].", nome))==1:
+                    with open(dst, 'wb+') as destination:
+                        for chunk in f.chunks():
+                            destination.write(chunk)
+                    size = os.path.getsize(dst)
+                    nome_base = nome.split("_BAND")[0]
+                    tipo = "red" if "BAND3" in nome else "green" if "BAND2" in nome else "blue" if "BAND1" in nome else "pan" if "BAND0" in nome else "nir" if "BAND4" in nome else ""
+                    try:
+                        # Já existia a intenção desse download registrada no banco
+                        d = Download.objects.get(nome__contains=nome)
+                        d.nome_base=nome_base
+                        d.tipo=tipo
+                        d.finalizado=True
+                        d.iniciado_em = d.terminado_em = timezone.now()
+                        d.content_length = d.progresso =size
+                        d.arquivo=dst
+                        d.save()
+                        m+=1
+                    except:
+                        d = Download(url=dst,nome=nome,nome_base=nome_base,tipo=tipo,
+                                finalizado=True, iniciado_em = timezone.now(),terminado_em = timezone.now(),
+                                content_length = size,progresso = size, arquivo=dst
+                        )
+                        d.save()
+                        a+=1
+            self.message_user(request, "Adicionados/Modificados (%s/%s) registros"%(a,m))
+            return redirect("..")
+        form = CsvImportForm()
+        payload = {"form": form,'opts': self.model._meta,}
+        return render(
             request, "admin/pasta_local_tiffs_form.html", payload
         )
+
 
 admin.site.register(Download,MyDownloadAdmin)
 

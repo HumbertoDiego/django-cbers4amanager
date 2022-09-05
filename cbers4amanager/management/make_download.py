@@ -147,7 +147,7 @@ def main(pks):
 if __name__ == '__main__':
 	pks = sys.argv[1:]
 	if "--todos" in pks:
-		pks = [str(d.pk) for d in Download.objects.filter(finalizado=False).order_by('id').all()]
+		pks = [str(d.pk) for d in Download.objects.filter(finalizado=False).order_by('prioridade').all()]
 	main(pks)
 	
 
