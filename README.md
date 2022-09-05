@@ -51,7 +51,7 @@ docker-compose restart
       * /usr/bin/python manage.py runserver 0.0.0.0:81
       * python /app/uploads/dj_process_tasks/make_download.py --todos
     * Ou abrindo a tabela `Task Instances` pelo Django-Admin
-9. Após a confecção final da imagem fusionada com resolução espacial de 2m os insumos podem ser deletados para fins de poupar espaço em disco. Para isso, atualize o Status dos itens na tabela `Fusão RGB/PAN` para `Finalizado=True` isso determina a exclusão agendada dos insumos (Downloads, Composições RGB e Recortes) que originaram o arquivo fusiondao. A exclusão tem um agendamento semanal (dom 00:02) por padrão. 
+9. Após a confecção final da imagem fusionada com resolução espacial de 2m os insumos podem ser deletados para fins de poupar espaço em disco. Para isso, atualize o Status dos itens na tabela `Fusão RGB/PAN` para `Finalizado=True` isso determina a exclusão agendada dos insumos (Downloads, Composições RGB e Recortes) que originaram o arquivo fusiondao. A exclusão tem um agendamento semanal (dom 00:02) por padrão e também exclui os arquivos órfãos, ou seja, cujo nome não esteja listado na tabela `Download`.
 
 
 
@@ -95,11 +95,14 @@ Feições geoespaciais em formatos de arquivos diversos são mais facilmente inc
 
 ### Deletar conjunto de arquivos obsoletos usados como insumos (bandas, composição RGB/NDVI e recortes)
 
-Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os insumos podem ser deletados para fins de poupar espaço em disco. Para fazer isso, é necessario verificar o banco em `postgres://<IP>:5432` e coletar o ID e as tabelas dos arquivos.
+Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os insumos podem ser deletados para fins de poupar espaço em disco. Pode-se fazer isso, de duas formas:
 
-Em qualquer tabela, ao se deletar a linha, os arquivos gerados naquela etapa serão excluídos:
+1. Abrir o banco em `postgres://<IP>:5432` pelo **QGIS** e deletar as linhas, o programa agendado `rm_insumos.py` se encarrega de excluir os arquivos órfãos.
+
+2. Pela plataforma web, ao se deletar a linha, os arquivos gerados naquela etapa serão excluídos no mesmo instante:
   * Ao se deletar itens da tabela `Fusão RGB/PAN`: deleta-se também o arquivos TIFF da fusão;
   * Ao se deletar itens da tabela `Recorte RGB/PAN`: deleta-se também os arquivos TIFF recortados na área de interesse;
   * Ao se deletar itens da tabela `Composição RGB`: deleta-se o arquivo TIFF da composição RGB;
-  * Ao se deletar itens da tabela `Download`: deleta-se o arquivo TIFF da banda CBERS4;
+  * Ao se deletar itens da tabela `Download`: deleta-se o arquivo TIFF da banda CBERS4.
+
 ATENÇÃO, se os downloads não forem deletados, em algum momento o agendamento será executado e as imagens das etapas subseqeuntes serão recriadas.

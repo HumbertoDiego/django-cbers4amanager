@@ -11,7 +11,7 @@ gdalwarp -overwrite -of GTiff -cutline AOI.geojson -cl AOI -crop_to_cutline INPU
 RASTER.objects.raw('SELECT ST_Clip(rast, inom,1) from inom_clippereds.rgb
 WHERE rid = 171;'):
 """
-import os, sys, django, json
+import os, sys, django
 sys.path.append(os.getcwd()) 
 
 from django.conf import settings
@@ -20,8 +20,71 @@ django.setup()
 
 from cbers4amanager.models import Download, Pansharpened, ComposicaoRGB, INOMClippered
 
-
-def main(pks):
+def delete_orfaos():
+    dowpath = Download._meta.get_field('arquivo').path
+    rgbpath = ComposicaoRGB._meta.get_field('rgb').path
+    recpath = INOMClippered._meta.get_field('recorte_rgb').path
+    panpath = Pansharpened._meta.get_field('pansharp').path
+    for n in os.listdir( dowpath ):
+        f = os.path.join(recpath,n)
+        if os.path.isfile(f) and n!='.gitkeep':
+            try:
+                Download.objects.get(nome=n)
+            except:
+                try:
+                    print(n)
+                    os.remove(f)
+                except OSError as error:
+                    print(error,n)
+                    continue
+    for n in os.listdir( rgbpath ):
+        f = os.path.join(rgbpath,n)
+        if os.path.isfile(f) and n!='.gitkeep':
+            try:
+                ComposicaoRGB.objects.get(rgb=f)
+            except:
+                try:
+                    print(n)
+                    os.remove(f)
+                except OSError as error:
+                    print(error,n)
+                    continue
+    for n in os.listdir( recpath ):
+        f = os.path.join(recpath,n)
+        if os.path.isfile(f) and n!='.gitkeep':
+            if "RGB" in n:
+                try:
+                    INOMClippered.objects.get(recorte_rgb=f)
+                except:
+                    try:
+                        print(n)
+                        os.remove(f)
+                    except OSError as error:
+                        print(error,n)
+                        continue
+            else:
+                try:
+                    INOMClippered.objects.get(recorte_pancromatica=f)
+                except:
+                    try:
+                        print(n)
+                        os.remove(f)
+                    except OSError as error:
+                        print(error,n)
+                        continue
+    for n in os.listdir( panpath ):
+        f = os.path.join(panpath,n)
+        if os.path.isfile(f) and n!='.gitkeep':
+            try:
+                Pansharpened.objects.get(pansharp=f)
+            except:
+                try:
+                    print(n)
+                    os.remove(f)
+                except OSError as error:
+                    print(error,n)
+                    continue
+def delete_parents(pks):
     for i in pks:
         try:
             p = Pansharpened.objects.get(pk=i)
@@ -53,6 +116,10 @@ def main(pks):
         except Exception as e:
             print(str(e))
             continue
+
+def main(pks):
+    delete_parents(pks)
+    delete_orfaos()
 
 if __name__ == '__main__':
     pks = [i.id for i in Pansharpened.objects.filter(finalizado=True).all()]
