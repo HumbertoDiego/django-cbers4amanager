@@ -22,7 +22,7 @@ def getIntersection(pan):
         return queryset
 
 def get_composicao(classe, requisicao):
-    msg=""
+    err=""
     pans_cujo_ao_menos_rgb_ja_registrado_para_recorte = INOMClippered.objects.values('pancromatica').all()
     n_registrar_esses_ids = list(set([i['pancromatica'] for i in pans_cujo_ao_menos_rgb_ja_registrado_para_recorte if i['pancromatica'] ]))
     queryset = Download.objects.filter(finalizado=True,tipo='pan').exclude(id__in=n_registrar_esses_ids)
@@ -36,20 +36,19 @@ def get_composicao(classe, requisicao):
             continue
         print(inoms)
         if not inoms: 
-            msg += ": Sem interseção com áreas de interesse."
+            err += str(pan.nome_base)+" - Sem interseção com áreas de interesse. "
             continue
         for inom in inoms.all():
             # já tem que ter no min uma RGB cadastrada pra encontrar:
-            i = INOMClippered.objects.get(nome=pan.nome_base+"_"+inom.inom)
-            if i:
-                try:
-                    i.pancromatica = pan
-                    i.save()
-                    count+=1
-                except Exception as e:
-                    print(str(e))
-                    pass
-    print("Adicionados %s registros%s"%(count,msg))
+            try:
+                i = INOMClippered.objects.get(nome=pan.nome_base+"_"+inom.inom)
+                i.pancromatica = pan
+                i.save()
+                count+=1
+            except Exception as e:
+                print(str(e))
+                pass
+    print("Adicionados %s registros. %s"%(count,err))
 
 if __name__ == '__main__':
 	get_composicao(None,None)

@@ -267,16 +267,16 @@ def main():
     )
     p9.save()
     t = Task(
-        name='Remover Bandas',
-        description='Deletar os downloads das bandas RGB que já resultaram em uma composição RGB',
+        name='Remover Insumos',
+        description='Exclusão dos insumos (Downloads, Composições RGB e Recortes) que originaram as fusões finalizadas. ',
         is_active=True,
         level=0,
         offset='0%',
         interpreter='python',
-        arguments='--todos --rgb',
+        arguments='',
         process_id=p9.id
     )
-    path = Path('cbers4amanager/management/rm_download.py')
+    path = Path('cbers4amanager/management/rm_insumos.py')
     with path.open(mode='rb') as f:
         t.code = File(f, name=path.name)
         t.save()

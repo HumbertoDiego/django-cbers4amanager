@@ -14,7 +14,7 @@
 {% endblock %}
 
 {% block content %}
-  <p>Tem certeza que deseja fazer o {{ tarefa }} dos seguintes itens?</p>
+  <p>Tem certeza que deseja {{ tarefa }} os seguintes itens?</p>
   <ul style="padding: 0">
     {% for object in queryset.all %}
       <li style="list-style: none; float: left; margin: 5px">

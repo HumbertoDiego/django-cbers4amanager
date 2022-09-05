@@ -98,7 +98,7 @@ def baixar(download):
 					if delta_t!=0:
 						speed =  current_downloaded/1000/delta_t
 					download.save()
-					print("\r{:.1f}% - {:.1f} KB/s".format(exist_size*100/total_length,speed), end="")
+					#print("\r{:.1f}% - {:.1f} KB/s".format(exist_size*100/total_length,speed), end="")
 			download.finalizado = True
 			download.terminado_em = timezone.now()
 	except requests.exceptions.Timeout as e:
@@ -128,7 +128,7 @@ def main(pks):
 				print("%s %s - INICIANDO."%(i,download.nome))
 				sucesso = baixar(download)
 			except KeyboardInterrupt:
-				print('Interrupted')
+				print('KeyboardInterrupt')
 				try:
 					sys.exit(0)
 				except SystemExit:

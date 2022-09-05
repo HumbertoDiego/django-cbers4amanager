@@ -65,8 +65,9 @@ docker-compose restart
     * make_recorte.py --todos --pan
     * transfer_recorte2pansharp.py
     * make_pansharp.py --todos
+    * rm_insumos.py
  
-    Onde --todos seleciona os IDS dos elementos não finalizados para execução. Podendo ser substituídos pelo IDS desejados.
+    Onde --todos seleciona os IDS dos elementos não finalizados para execução. Podendo ser substituídos pelo IDs desejados.
 
 3. A qualquer momento pode-se executá-los através do terminal, por exemplo:
     * `docker-compose exec app bash`
@@ -91,4 +92,4 @@ Feições geoespaciais em formatos de arquivos diversos são mais facilmente inc
 
 ### Deletar conjunto de arquivos obsoletos usados como insumos (bandas, composição RGB/NDVI e recortes)
 
-Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os insumos podem ser deletados para fins de poupar espaço em disco. Para fazer isso, é necessário verificar o banco em `postgres://<IP>:5432` e coletar o ID e as tabelas dos arquivos.
+Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os insumos podem ser deletados para fins de poupar espaço em disco. Para fazer isso, é necessario verificar o banco em `postgres://<IP>:5432` e coletar o ID e as tabelas dos arquivos.
