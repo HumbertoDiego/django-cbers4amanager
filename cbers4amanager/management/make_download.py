@@ -116,6 +116,8 @@ def main(pks):
 			download = Download.objects.get(pk=i)
 		except:
 			continue
+		# Os Downloads são tão demorados que esse status pode ter sido alterado
+		if download.finalizado: continue
 		if not download.url:
 			print("%s SEM URL, defina uma url para Repetir."%i)
 			continue
