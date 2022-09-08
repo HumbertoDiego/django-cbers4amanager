@@ -88,6 +88,16 @@ class MyInomAdmin(OSMGeoAdmin):
         return render(
             request, "admin/upload_form.html", payload
         )
+    def render_change_form(self, request, context, *args, **kwargs):
+        obj = context['original']
+        field = forms.FilePathField(path=context['adminform'].form.fields['melhor_imagem'].path, match='(.*)'+obj.inom+'(.*)')
+        choices = [('','---------')]
+        choices.extend(field.choices)
+        context['adminform'].form.fields['melhor_imagem']._set_choices(choices)
+        #queryset = Pansharpened.objects.filter(finalizado=True).filter(pansharp__contains=obj.inom)
+        #context['adminform'].form.fields['melhor_imagem'].queryset = queryset
+        return super(MyInomAdmin, self).render_change_form(request, context, *args, **kwargs)
+
 admin.site.register(INOM,MyInomAdmin)
 
 ################ Download ##################
@@ -376,7 +386,7 @@ class PostgreSQLGroupConcat(Aggregate):
 
 class MyComposicaoRGBadmin(OSMGeoAdmin):
     search_fields = ['rgb']
-    actions = [set_bounds_rgb]
+    actions = [set_bounds_rgb,'comecar_composicao']
     list_display = ('_nome', 'finalizado','_download')
     change_list_template = "cbers4amanager/composicaorgb_changelist.html"
     def get_urls(self):
@@ -459,42 +469,10 @@ class MyComposicaoRGBadmin(OSMGeoAdmin):
     def comecar_composicao(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
             aux = [str(q.pk) for q in queryset]
-            print(aux)
-            try:
-                process = Process.objects.get(name="Composição")
-            except:
-                process = Process(name="Composição",description="Toda hora",run_if_err=True,
-                                minute="1",hour="*",day_of_month="*",month="*",day_of_week="*")
-                process.save()
-            # DONE: Verificar se o id já está em description de um Task ativo
-            ids = []
-            for i in range(len(aux)):
-                try:
-                    q = Task.objects.filter(process=process).get(description__contains="'"+aux[i]+"'")
-                    # Existe ativo, então não cria outro
-                except Task.DoesNotExist as e:
-                    # Não existe ativo, então cria outro
-                    ids.append(aux[i])
-                    continue
-            last = Task.objects.order_by('-id').first()
-            next_id = last.id + 1 if last else 1
-            t = Task(process=process,name="Composição "+str(next_id), description= "Composição dos itens: %s"%(ids),
-                    interpreter= os.popen('which python3').read().replace('\n',''),
-                    arguments = " ".join(ids))
-            path = os.path.join(os.getcwd(),'cbers4amanager/management/composicaorgb_cbers4a.py')
-            with open(path, "rb") as py:
-                t.code= ContentFile(py.read(), name=os.path.basename(path))
-            try:
-                t.save()
-                self.message_user(request,
-                                    "Composição de %s iniciada."%(ids), 
-                                    messages.SUCCESS)
-            except IntegrityError as e:
-                self.message_user(request,
-                                    "Processo já existe. Reiniciando...", 
-                                    messages.WARNING)
-                pass
-            job, tasks = Job.create(process)
+            args = " ".join(aux)
+            comando = "python cbers4amanager/management/make_composicaorgb.py "+ args
+            print(comando) # Send to logger
+            os.system(comando)
         else:
             request.current_app = self.admin_site.name
             context = {
@@ -508,9 +486,9 @@ class MyComposicaoRGBadmin(OSMGeoAdmin):
 admin.site.register(ComposicaoRGB,MyComposicaoRGBadmin)
 
 class MyINOMClipperedAdmin(admin.ModelAdmin):
-    actions = ['comecar_recortes_rgb','comecar_recortes_pan',set_finalizado]
+    actions = ['comecar_recortes_rgb','comecar_recortes_pan','get_pan',set_finalizado]
     search_fields = ['nome']
-    list_display = ('nome', '_recorte_rgb', '_recorte_pan', '_area_util', 'finalizado')
+    list_display = ('nome','_rgb','_pancromatica', '_recorte_rgb', '_recorte_pan', '_area_util', '_finalizado')
     change_list_template = "cbers4amanager/inomclippered_changelist.html"
     @admin.display(ordering='area_util')
     def _area_util(self,obj):
@@ -525,6 +503,21 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
             retorno = "-"
         return retorno
     _area_util.short_description = 'Área Útil (%)'
+    @admin.display(ordering='rgb')
+    def _rgb(self,obj):
+        if not obj.rgb:
+            retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
+        else:
+            retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
+        return retorno
+    @admin.display(ordering='pancromatica')
+    def _pancromatica(self,obj):
+        if not obj.pancromatica:
+            retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
+        else:
+            retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
+        return retorno
+    _pancromatica.short_description = 'PAN'
     @admin.display(ordering='recorte_rgb')
     def _recorte_rgb(self,obj):
         if not obj.recorte_rgb:
@@ -538,6 +531,15 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
             retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
         else:
             retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
+        return retorno
+    @admin.display(ordering='finalizado')
+    def _finalizado(self,obj):
+        if obj.finalizado:
+            retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="False">')
+        elif obj.finalizado==None:
+            retorno = mark_safe('<img src="/static/admin/img/icon-alert.svg" alt="Dispensado">')
+        else:
+            retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="True">')
         return retorno
     def get_urls(self):
         urls = super().get_urls()
@@ -615,32 +617,51 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
         return render(
             request, "admin/get_composicoes_form.html", payload
         )
+    @admin.action(description='Procurar Banda PAN das linhas selecionadas')
+    def get_pan(self, request, queryset):
+        count = 0
+        for rec in queryset.all():
+            d = Download.objects.filter(nome_base=rec.rgb.nome_base,tipo='pan',finalizado=True)
+            if len(d)==1:
+                rec.pancromatica = d[0]
+                rec.save()
+                count += 1
+        self.message_user(request, "Modificados %s registros"%(count))
+        return queryset
     @admin.action(description='Começar Recortes RGB das linhas selecionadas')
     def comecar_recortes_rgb(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
-            # TODO
-            self.message_user(request, "Adicionados %s registros"%(queryset))
+            aux = [str(q.pk) for q in queryset if q.rgb]
+            args = " ".join(aux)
+            comando = "python cbers4amanager/management/make_recorte.py --rgb "+ args
+            print(comando) # Send to logger
+            os.system(comando)
+            self.message_user(request, "Modificados %s registros"%len(aux))
         else:
             request.current_app = self.admin_site.name
             context = {
                 'action':request.POST.get("action"),
                 'queryset':queryset,
                 'opts': self.model._meta,
-                'tarefa': "RECORTE"
+                'tarefa': "RECORTE RGB"
             } 
             return render(request, "admin/recorte_confirmation.html", context)
     @admin.action(description='Começar Recortes PAN das linhas selecionadas')
     def comecar_recortes_pan(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
-            #TODO
-            self.message_user(request, "Adicionados %s registros"%(queryset))
+            aux = [str(q.pk) for q in queryset if q.pancromatica]
+            args = " ".join(aux)
+            comando = "python cbers4amanager/management/make_recorte.py --pan "+ args
+            print(comando) # Send to logger
+            os.system(comando)
+            self.message_user(request, "Modificados %s registros"%len(aux))
         else:
             request.current_app = self.admin_site.name
             context = {
                 'action':request.POST.get("action"),
                 'queryset':queryset,
                 'opts': self.model._meta,
-                'tarefa': "COMPOSICAO"
+                'tarefa': "RECORTE PAN"
             } 
             return render(request, "admin/recorte_confirmation.html", context)
     @admin.action(description='Update finalizado=True das linhas selecionadas')
@@ -650,11 +671,11 @@ class MyINOMClipperedAdmin(admin.ModelAdmin):
 admin.site.register(INOMClippered,MyINOMClipperedAdmin)
 
 
-class MyPansharpenedAdmin(admin.ModelAdmin):
+class MyPansharpenedAdmin(GISModelAdmin):
     actions = ['comecar_pansharp','set_finalizado']
     list_display = ('_nome', 'finalizado','_resultado')
     change_list_template = "cbers4amanager/pansharp_changelist.html"
-    fields = ('insumos','pansharp', 'finalizado')
+    #fields = ('insumos','pansharp','bounds','finalizado')
     @admin.display(ordering='pansharp')
     def _resultado(self,obj):
         if obj.pansharp:
@@ -715,8 +736,12 @@ class MyPansharpenedAdmin(admin.ModelAdmin):
     @admin.action(description='Começar Pansharpening das linhas selecionadas')
     def comecar_pansharp(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
-            #TODO
-            self.message_user(request, "Adicionados %s registros"%(queryset))
+            aux = [str(q.pk) for q in queryset if q.insumos]
+            args = " ".join(aux)
+            comando = "python cbers4amanager/management/make_pansharp.py "+ args
+            print(comando) # Send to logger
+            os.system(comando)
+            self.message_user(request, "Modificados %s registros"%len(aux))
         else:
             request.current_app = self.admin_site.name
             context = {
@@ -730,8 +755,5 @@ class MyPansharpenedAdmin(admin.ModelAdmin):
     def set_finalizado(modeladmin, request, queryset):
         queryset.update(finalizado=True)
     
-
-
-
 admin.site.register(Pansharpened, MyPansharpenedAdmin)
 

@@ -125,8 +125,8 @@ class Pansharpened(models.Model):
                                     blank=True, null=True, match='(.*).tif', max_length=300,
                                     help_text='Este arquivo será criado após escolher a opção "Começar Fusão RGB/PAN das linhas selecionadas". ',
     )
+    bounds = models.PolygonField(blank=True, null=True )
     finalizado = models.BooleanField(default=False,blank=True, null=True,help_text='Determina a exclusão agendada dos insumos (Downloads, Composições RGB e Recortes) que originaram este arquivo. ', )
-
     def __str__(self):
         if self.pansharp: return os.path.basename(self.pansharp)
         else: return str(self.insumos)
