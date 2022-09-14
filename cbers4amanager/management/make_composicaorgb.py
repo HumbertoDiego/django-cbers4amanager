@@ -35,6 +35,8 @@ def main(pks):
         if comprgb.finalizado: continue
         rgbfname = '%s'%comprgb
         out = os.path.join(settings.MEDIA_ROOT,'a','rgbs',rgbfname)
+        if os.path.isfile(out):
+            os.remove(out)
         red = os.path.join(settings.MEDIA_ROOT,'a','bandas',comprgb.red.nome)
         green = os.path.join(settings.MEDIA_ROOT,'a','bandas',comprgb.green.nome)
         blue = os.path.join(settings.MEDIA_ROOT,'a','bandas',comprgb.blue.nome)

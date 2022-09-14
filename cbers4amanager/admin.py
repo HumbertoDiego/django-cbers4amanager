@@ -18,6 +18,7 @@ from django.utils import timezone
 from django.db.models import CharField
 from django.db.models.aggregates import Aggregate
 from django.utils.html import mark_safe
+from django.db.models import F
 
 class MySelectWithDownloadWidget(forms.widgets.Select):
     template_name = 'django/forms/widgets/select.html'
@@ -147,16 +148,55 @@ def int2size(content_length):
     return retorno
 class MyDownloadAdmin(OSMGeoAdmin):
     actions = [set_finalizado,set_nao_finalizado,set_names,'priorizar_download',set_bounds]
-    list_display = ('_nome', 'tipo', 'iniciado_em','_content_length','_progresso','finalizado')
+    list_display = ('_nome', 'tipo', 'iniciado_em','_status')
     search_fields = ['nome', 'tipo' ]
     list_filter = ('finalizado', 'tipo')
     change_list_template = "cbers4amanager/download_changelist.html"
     @admin.display(ordering='nome')
     def _nome(self, obj):
         return obj.nome.replace("_"," ")
+    @admin.display(ordering='progresso')
+    def _progresso(self, obj):
+        return int2size(obj.content_length)
     @admin.display(ordering='content_length')
     def _content_length(self, obj):
         return int2size(obj.content_length)
+    @admin.display(ordering='finalizado')   
+    def _status(self, obj):
+        if not obj.finalizado:
+            retorno = mark_safe('<img src="/static/admin/img/icon-no.svg" alt="False">')
+            if obj.progress_bar:
+                h = '<span id="%s">%s</span>'%(str(obj.id)+"_progress_bar",obj.progress_bar)
+                s = """<script>
+                function %s() {
+                var ob = document.getElementById("%s");
+                ob.parentElement.parentElement.classList.remove("blink-one");
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                        console.log(xhr.response);
+                        if (ob.textContent != xhr.response){
+                            ob.textContent = xhr.response;
+                            ob.parentElement.parentElement.classList.add("blink-one");
+                        }
+                    }
+                }
+                xhr.open("GET", "/get_progress_bar/%s/");
+                xhr.send();
+                setTimeout(%s, 10000);
+                }
+                %s();
+                </script>"""%(
+                "get_progresso_"+str(obj.id),
+                str(obj.id)+"_progress_bar",
+                str(obj.id),
+                "get_progresso_"+str(obj.id),
+                "get_progresso_"+str(obj.id)
+                )
+                retorno = mark_safe('<div>%s %s</div>'%(h,s))
+        else:
+            retorno = mark_safe('<img src="/static/admin/img/icon-yes.svg" alt="True">')
+        return retorno
     @admin.display(ordering='progresso')   
     def _progresso(self, obj):
         if obj.progresso!=obj.content_length and obj.progresso:
@@ -175,7 +215,7 @@ class MyDownloadAdmin(OSMGeoAdmin):
                         }
                     }
                 }
-                xhr.open("GET", "/get_progresso/%s/");
+                xhr.open("GET", "/get_progress_bar/%s/");
                 xhr.send();
                 setTimeout(%s, 10000);
             }
@@ -232,7 +272,7 @@ class MyDownloadAdmin(OSMGeoAdmin):
     @admin.action(description='Priorizar Download')
     def priorizar_download(self, request, queryset):
         if request.method=='POST' and "confirmation" in request.POST:
-            queryset.update(prioridade=1)
+            queryset.update(prioridade=F('prioridade')-1)
             # STOP current downloads
             # Tb Encerra os related JOBs com erro, abrindo caminho pra um novo Job daqui a 1 minuto
             comando = "kill $(ps -auxw | grep make_download | grep -v grep | awk '/python/ {print $2}')"

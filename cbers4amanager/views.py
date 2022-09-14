@@ -22,3 +22,6 @@ def get_progresso(request,d_id):
             retorno = "{:.2f}".format(content_length/1000000000.0)+" GB"
         return retorno
     return HttpResponse("%s" % int2size(Download.objects.get(id=d_id).progresso))
+
+def get_progress_bar(request,d_id):
+    return HttpResponse("%s"%(Download.objects.get(id=d_id).progress_bar))

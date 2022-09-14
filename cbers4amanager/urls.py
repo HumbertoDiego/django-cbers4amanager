@@ -18,5 +18,6 @@ urlpatterns = [
             'document_root': settings.CBERS4AMANAGER['SAMPLE_FOLDER'],
             'show_indexes': True
         }),
-    path('get_progresso/<d_id>/', views.get_progresso, name='get_progresso')
+    path('get_progresso/<d_id>/', views.get_progresso, name='get_progresso'),
+    path('get_progress_bar/<d_id>/', views.get_progress_bar, name='get_progress_bar')
 ]

@@ -51,10 +51,6 @@ def getNuvens(fname,m):
     comando = comando.format(fname=fname,r=f*mred,g=f*mgreen,b=f*mblue,soma=f*sum(m),delta=fdelta*sum(m),out=out)
     print(comando)
     os.system(comando)
-    if not os.path.isfile(out):
-        print("No such file or directory:",out)
-    else:
-        os.remove(out)
     return out
 
 def main(pks,final_do_nome):

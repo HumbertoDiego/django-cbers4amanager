@@ -14,7 +14,7 @@ services:
     #command: sh -c "python manage.py runserver 0.0.0.0:81"
     command: bash ./my_wrapper_script.sh
     ports:
-          - 81:81
+          - 80:81
     environment:
       POST_HOST: post
       POST_USER: postgres

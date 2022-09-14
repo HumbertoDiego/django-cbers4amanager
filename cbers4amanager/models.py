@@ -41,6 +41,7 @@ class Download(models.Model):
     terminado_em = models.DateTimeField(blank=True, null=True )
     content_length = models.BigIntegerField(blank=True, null=True )
     progresso = models.BigIntegerField(blank=True, null=True )
+    progress_bar = models.CharField(max_length=500,blank=True, null=True, default='')
     arquivo = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/bandas'),blank=True, null=True)
     bounds = models.PolygonField(blank=True, null=True )
     prioridade = models.IntegerField(blank=True, null=True, default=999 )
