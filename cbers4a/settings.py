@@ -198,6 +198,10 @@ CBERS4AMANAGER = {
     'SAMPLE_FOLDER': 'cbers4amanager/static/cbers4amanager/amostras'
 }
 
+# Avoid exception SuspiciousOperation[TooManyFieldsSent]
+# at /admin/process/job/ when deleting more than 1000 rows
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
 ######### CASO Tentando rodar sem Docker, diretamente no SO, deve-se #########
 ### Conf BANCO PostgreSQL: 
 #  ip a # Alterar as variáveis de ambiente para apontar para este servidor --> POST_HOST 

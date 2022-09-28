@@ -10,7 +10,7 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
   * Debian/Ubuntu: 
     ```
     curl -fsSL https://get.docker.com -o get-docker.sh
-    DRY_RUN=1 sh ./get-docker.sh
+    sh get-docker.sh
     apt install docker-compose
     ```
 ## Instalação

@@ -19,6 +19,8 @@ from django.db.models import CharField
 from django.db.models.aggregates import Aggregate
 from django.utils.html import mark_safe
 from django.db.models import F
+from django.forms import widgets
+from django.db.models import JSONField 
 
 class MySelectWithDownloadWidget(forms.widgets.Select):
     template_name = 'django/forms/widgets/select.html'
@@ -27,25 +29,47 @@ class MySelectWithDownloadWidget(forms.widgets.Select):
 ############### PROJETO ###############
 class MyProjetoAdmin(GISModelAdmin):
     search_fields = ['nome']
-    list_display = ('nome','_aoi_associadas' )
+    list_display = ('nome','_aoi_associadas','_img_associadas' )
     @admin.display()
     def _aoi_associadas(self,obj):
         manys = INOM.objects.select_related().filter(projeto_id=obj.id) # Rápido
         #manys = INOM.objects.filter(projeto_id=obj.id) # Lento
-        return manys.count()
+        r = mark_safe('<a href="/admin/cbers4amanager/inom/?projeto__nome=%s">%s</a>'%(obj.nome,manys.count()))
+        return r
+    @admin.display()
+    def _img_associadas(self,obj):
+        manys = Pansharpened.objects.select_related().filter(insumos__inom__projeto_id=obj.id) # Rápido
+        #manys = Pansharpened.objects.filter(insumos__inom__projeto_id=obj.id) # Lento
+        r = mark_safe('<a href="/admin/cbers4amanager/pansharpened/?q=%s">%s</a>'%(obj.nome,manys.count()))
+        return r
 admin.site.register(Projeto,MyProjetoAdmin)
-
-
 
 ################ INOM ##################
 class JsonImportForm(forms.Form):
     file = forms.FileField()
 
+class PrettyJSONWidget(widgets.Textarea):
+    def format_value(self, value):
+        try:
+            value = json.dumps(json.loads(value), indent=2, sort_keys=True)
+            # these lines will try to adjust size of TextArea to fit to content
+            row_lengths = [len(r) for r in value.split('\n')]
+            self.attrs['rows'] = 5 #min(max(len(row_lengths) + 2, 10), 30)
+            self.attrs['cols'] = 20 #min(max(max(row_lengths) + 2, 40), 120)
+            return value
+        except Exception as e:
+            logger.warning("Error while formatting JSON: {}".format(e))
+            return super(PrettyJSONWidget, self).format_value(value)
+
 class MyInomAdmin(OSMGeoAdmin):
     actions = []
-    list_display = ('inom', 'mi','projeto','melhor_imagem')
+    list_display = ('inom', 'mi','projeto')
     change_list_template = "cbers4amanager/inom_changelist.html"
     search_fields = ['inom' ]
+    list_filter = ('projeto__nome',)
+    formfield_overrides = {
+       JSONField: {'widget': PrettyJSONWidget}
+    }
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
@@ -90,11 +114,11 @@ class MyInomAdmin(OSMGeoAdmin):
             request, "admin/upload_form.html", payload
         )
     def render_change_form(self, request, context, *args, **kwargs):
-        obj = context['original']
-        field = forms.FilePathField(path=context['adminform'].form.fields['melhor_imagem'].path, match='(.*)'+obj.inom+'(.*)')
-        choices = [('','---------')]
-        choices.extend(field.choices)
-        context['adminform'].form.fields['melhor_imagem']._set_choices(choices)
+        #obj = context['original']
+        #field = forms.FilePathField(path=context['adminform'].form.fields['melhor_imagem'].path, match='(.*)'+obj.inom+'(.*)')
+        #choices = [('','---------')]
+        #choices.extend(field.choices)
+        #context['adminform'].form.fields['melhor_imagem']._set_choices(choices)
         #queryset = Pansharpened.objects.filter(finalizado=True).filter(pansharp__contains=obj.inom)
         #context['adminform'].form.fields['melhor_imagem'].queryset = queryset
         return super(MyInomAdmin, self).render_change_form(request, context, *args, **kwargs)
@@ -215,7 +239,7 @@ class MyDownloadAdmin(OSMGeoAdmin):
                         }
                     }
                 }
-                xhr.open("GET", "/get_progress_bar/%s/");
+                xhr.open("GET", "/get_progress/%s/");
                 xhr.send();
                 setTimeout(%s, 10000);
             }
@@ -713,8 +737,9 @@ admin.site.register(INOMClippered,MyINOMClipperedAdmin)
 
 class MyPansharpenedAdmin(GISModelAdmin):
     actions = ['comecar_pansharp','set_finalizado']
-    list_display = ('_nome', 'finalizado','_resultado')
+    list_display = ('_nome','_projeto','_resultado','finalizado')
     change_list_template = "cbers4amanager/pansharp_changelist.html"
+    search_fields = ['insumos__inom__inom','insumos__inom__projeto__nome']
     #fields = ('insumos','pansharp','bounds','finalizado')
     @admin.display(ordering='pansharp')
     def _resultado(self,obj):
@@ -722,6 +747,11 @@ class MyPansharpenedAdmin(GISModelAdmin):
             return mark_safe('<a href="{}"><img src="/static/admin/img/icon-viewlink.svg" alt="View"></a>'.format(reverse('admin:cbers4amanager_pansharpened_download_pansharp', args=[obj.pk])))
         else:
             return "-"
+    @admin.display(ordering='pansharp')
+    def _projeto(self,obj):
+        if obj.insumos and obj.insumos.inom and obj.insumos.inom.projeto:
+            return obj.insumos.inom.projeto.nome
+        else: return "-"
     @admin.display(ordering='pansharp')
     def _nome(self,obj):
         if obj.pansharp: return os.path.basename(obj.pansharp)

@@ -56,7 +56,6 @@ class Migration(migrations.Migration):
                 ('inom', models.CharField(max_length=20, unique=True)),
                 ('mi', models.CharField(blank=True, max_length=20, null=True, verbose_name='Mapa Índice')),
                 ('bounds', django.contrib.gis.db.models.fields.PolygonField(blank=True, null=True, srid=4326)),
-                ('melhor_imagem', models.FilePathField(blank=True, match='(.*).tif', max_length=300, null=True, path='D:\\devs\\django-cbers4amanager\\uploads\\pansharp')),
             ],
             options={
                 'verbose_name': 'Área de Interesse',

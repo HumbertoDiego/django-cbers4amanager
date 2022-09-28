@@ -15,14 +15,14 @@ class Projeto(models.Model):
         verbose_name_plural = "(0.0) Projetos"
 
 # 0) ASC 1:25k
+def get_default_json():
+    return dict(imagens_recortadas_fusionadas=[],imagens_recortadas_rgb=[],imagens_recortadas_pan=[])
 class INOM(models.Model):
     inom = models.CharField(max_length=20,unique=True)
     mi = models.CharField(max_length=20,blank=True,null=True,verbose_name = "Mapa Índice")
     bounds = models.PolygonField(blank=True, null=True )
-    melhor_imagem = models.FilePathField(path=os.path.join(settings.MEDIA_ROOT, 'a/pansharp'),
-                                    blank=True, null=True, match='(.*).tif', max_length=300,
-    )
     projeto = models.ForeignKey(Projeto, on_delete=models.SET_NULL, blank=True, null=True, related_name='relateds',)
+    imagens = models.JSONField(default=get_default_json)
     def __str__(self):
         return str(self.inom)
     class Meta:

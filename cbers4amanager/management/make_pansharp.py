@@ -41,7 +41,7 @@ def set_bounds(pan):
     shp = ogr.Open(out2,0)
     lyr = shp.GetLayerByName( "OUTPUT" )
 
-    # 4 Transformation params
+    # 4 Transform polygonSrc(==rasterSrc) to EPSG4326
     crs = lyr.GetSpatialRef()
     target = osr.SpatialReference()
     target.ImportFromEPSG(4326)
@@ -69,11 +69,13 @@ def set_bounds(pan):
     p = GEOSGeometry(poly.ExportToWkt(),srid="4326")
     pan.bounds = p
     pan.save()
+
+    # 8. Remover arquivos auxiliares
     os.remove(out)
     os.remove(out2)
     print("Geometria adicionada:",pan)
 
-def main(pks):
+def main(pks, do_overviews=False):
     for i in pks:
         try:
             pan = Pansharpened.objects.get(pk=i)
@@ -81,9 +83,9 @@ def main(pks):
             print(e)
             continue
         if pan.finalizado: continue
-        if pan.pansharp:
-            if os.path.isfile(pan.pansharp):
-                continue
+        # if pan.pansharp:
+        #     if os.path.isfile(pan.pansharp):
+        #         continue
         input_pan = pan.insumos.recorte_pancromatica
         if not os.path.isfile(input_pan):
             print("No such file or directory:",input_pan)
@@ -102,20 +104,38 @@ def main(pks):
         comando = 'gdal_pansharpen'
         comando += '.bat' if os.name=='nt' else '.py'
         comando += ' "{input_pan}" "{input_rgb}" "{out}" '.format(input_pan=input_pan,input_rgb=input_rgb,out=out)
-        comando += '-co COMPRESS=DEFLATE -co PHOTOMETRIC=RGB'
+        #comando += '-co COMPRESS=DEFLATE -co PHOTOMETRIC=RGB'
+        comando += '-co COMPRESS=ZSTD -co PREDICTOR=2 -co ZLEVEL=9 ' # ALTA COMPRESSÃO
         print(comando)
         os.system(comando)
         if not os.path.isfile(out):
             print("No such file or directory:",out)
             continue
+        elif do_overviews:
+            # Overview gauss > average > nearest
+            #{,,rms,bilinear,,cubic,cubicspline,lanczos,average_magphase,mode}
+            comando = 'gdaladdo'
+            comando += ' -r gauss "{input_fusioned}" 2 4 8 16'.format(input_fusioned=out)
+            print(comando)
+            os.system(comando)
         pan.pansharp = out
         pan.save()
         print("TERMINADO:",pan)
-        set_bounds(pan)
+        #set_bounds(pan)
 
 if __name__ == '__main__':
     pks = sys.argv[1:]
     if "--todos" in pks:
-        pks = [i.id for i in Pansharpened.objects.all()]
-    main(pks)
+        if "--overview" in pks:
+            pks = [i.id for i in Pansharpened.objects.all()]
+            main(pks,True)
+        else:
+            pks = [i.id for i in Pansharpened.objects.all()]
+            main(pks,False)
+    else:
+        if "--overview" in pks:
+            pks.remove('--overview')
+            main(pks,True)
+        else:
+            main(pks,False)
 
