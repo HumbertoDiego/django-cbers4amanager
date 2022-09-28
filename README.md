@@ -89,6 +89,8 @@ docker-compose restart
       * Senha: `docker-compose exec app python -c "import os;print(os.environ['POST_PASSWORD'])"`
 2. Verificação dos dados
 
+<img src="pics/acompanhamentoQGIS.jpg" alt="´followinQGIS" style="height:350px;"/>
+
 ### Adicionar feições via QGIS
 
 Feições geoespaciais em formatos de arquivos diversos são mais facilmente incorporadas na tabela `projeto` e `inom` (Áreas de interesse) carregadas com um simples copiar e colar dentro do QGIS.
