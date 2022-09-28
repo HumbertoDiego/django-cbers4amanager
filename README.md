@@ -27,7 +27,7 @@ docker-compose restart
 ```
 ## Fluxo de tabalho
 
-1. Navegar para a página `http://<IP>:81/admin`, realizar o LOGIN com as credenciais de superusuário criadas.
+1. Navegar para a página `http://<IP>/admin`, realizar o LOGIN com as credenciais de superusuário criadas.
 2. As tabelas estão nomeadas na ordem dos trabalhos.
 
 <img src="pics/fluxo.png" alt="fluxo" style="height:200px;"/>
@@ -99,7 +99,7 @@ Feições geoespaciais em formatos de arquivos diversos são mais facilmente inc
 
 Após a confecção final da imagem fusionada com resolução espacial de 2m, ou ainda, após a conclusão de que a fusão seria inviável por excesso de nuvens, os insumos podem ser deletados para fins de poupar espaço em disco. Pode-se fazer isso, de duas formas:
 
-1. Abrir o banco em `postgres://<IP>:5432` pelo **QGIS** e deletar as linhas, o programa agendado `rm_insumos.py` se encarrega de excluir os arquivos órfãos.
+1. Abrir o banco em `postgres://<USER>:<PASSWORD>@<IP>:5432/cbers4a` pelo **QGIS** e deletar as linhas, o programa agendado `rm_insumos.py` se encarrega de excluir os arquivos órfãos.
 
 2. Pela plataforma web, ao se deletar a linha, os arquivos gerados naquela etapa serão excluídos no mesmo instante:
   * Ao se deletar itens da tabela `Fusão RGB/PAN`: deleta-se também o arquivos TIFF da fusão;
