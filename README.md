@@ -107,4 +107,4 @@ Após a confecção final da imagem fusionada com resolução espacial de 2m, ou
   * Ao se deletar itens da tabela `Composição RGB`: deleta-se o arquivo TIFF da composição RGB;
   * Ao se deletar itens da tabela `Download`: deleta-se o arquivo TIFF da banda CBERS4.
 
-ATENÇÃO, se os downloads não forem deletados, em algum momento o agendamento será executado e as imagens das etapas subseqeuntes serão recriadas.
+ATENÇÃO, se os downloads não forem deletados, em algum momento o agendamento será executado e as imagens das etapas subsequentes serão recriadas.
