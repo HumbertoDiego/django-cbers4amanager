@@ -89,7 +89,9 @@ docker-compose restart
       * Senha: `docker-compose exec app python -c "import os;print(os.environ['POST_PASSWORD'])"`
 2. Verificação dos dados
 
-<img src="pics/acompanhamentoQGIS.jpg" alt="´followinQGIS" style="height:350px;"/>
+<img src="pics/proj1.jpg" alt="´followinQGIS" style="height:350px;"/>
+
+<img src="pics/proj2.jpg" alt="´followinQGIS" style="height:352px;"/>
 
 ### Adicionar feições via QGIS
 
