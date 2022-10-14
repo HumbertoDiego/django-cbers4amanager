@@ -1,6 +1,20 @@
 # CBERS4AManager
 App para download, composição RGB, recorte, calcular coeficiente de nuvens e fazer pansharpen de imagens CBERS4A.
 
+## Pansharpening
+
+São técnicas de fusão de imagens onde entram uma imagem pancromática e uma imagem multiespectral de baixa resolução, resultando em uma imagem de maior resolução espacial ao mesmo tempo em que preserva atributos espectrais específicos. Ambas as imagens devem ser tomadas sobre a mesma área. Entre os satélites especializados encontram-se Landsat 7/8 e SPOT 6/7, [World View 2/3](http://worldview3.digitalglobe.com/) e CBERA 4A.
+
+A biblioteca GDAL 3.3.3 release 2021/10/25 é usada para executar o [algoritmo de Brovey “ponderado”](https://gdal.org/drivers/raster/vrt.html#gdal-vrttut-pansharpen). O princípio geral deste algoritmo é que, após reamostragem das bandas espectrais para a resolução da banda pancromática, uma pseudo intensidade pancromática é calculada a partir de uma média ponderada das bandas espectrais. Então o valor de saída da banda espectral é seu valor de entrada multiplicado pela razão da intensidade pancromática real sobre a intensidade pseudo pancromática.
+
+```
+pseudo_panchro[pixel] = sum(weight[i] * spectral[pixel][i] for i=0 to nb_spectral_bands-1)
+ratio = panchro[pixel] / pseudo_panchro[pixel]
+for i=0 to nb_spectral_bands-1:
+    output_value[pixel][i] = input_value[pixel][i] * ratio
+```
+
+
 ## Requisitos
 * Docker: 
   * Windows:
@@ -13,6 +27,7 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
     sh get-docker.sh
     apt install docker-compose
     ```
+
 ## Instalação
 
 ```
@@ -25,6 +40,7 @@ docker-compose exec app python manage.py createsuperuser
 docker-compose exec app python cbers4amanager/management/pop_processes.py
 docker-compose restart
 ```
+
 ## Fluxo de tabalho
 
 1. Navegar para a página `http://<IP>/admin`, realizar o LOGIN com as credenciais de superusuário criadas.
