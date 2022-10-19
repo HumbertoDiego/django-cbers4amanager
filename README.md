@@ -3,7 +3,7 @@ App para download, composição RGB, recorte, calcular coeficiente de nuvens e f
 
 ## Pansharpening
 
-São técnicas de fusão de imagens onde entram uma imagem pancromática e uma imagem multiespectral de baixa resolução, resultando em uma imagem de maior resolução espacial ao mesmo tempo em que preserva atributos espectrais específicos. Ambas as imagens devem ser tomadas sobre a mesma área. Entre os satélites especializados encontram-se Landsat 7/8 e SPOT 6/7, [World View 2/3](http://worldview3.digitalglobe.com/) e CBERA 4A.
+São técnicas de fusão de imagens onde entram uma imagem pancromática e uma imagem multiespectral de baixa resolução, resultando em uma imagem de maior resolução espacial ao mesmo tempo em que preserva atributos espectrais específicos. Ambas as imagens devem ser tomadas sobre a mesma área. Entre os satélites especializados encontram-se [Landsat 7/8](https://www.usgs.gov/landsat-missions/landsat-8) e [SPOT 6/7](https://earth.esa.int/eogateway/catalog/spot-6-and-7-esa-archive), [World View 2/3](http://worldview3.digitalglobe.com/) e [CBERA 3/4/4A](http://www.cbers.inpe.br/sobre/cameras/cbers04a.php).
 
 A biblioteca GDAL 3.3.3 release 2021/10/25 é usada para executar o [algoritmo de Brovey “ponderado”](https://gdal.org/drivers/raster/vrt.html#gdal-vrttut-pansharpen). O princípio geral deste algoritmo é que, após reamostragem das bandas espectrais para a resolução da banda pancromática, uma pseudo intensidade pancromática é calculada a partir de uma média ponderada das bandas espectrais. Então o valor de saída da banda espectral é seu valor de entrada multiplicado pela razão da intensidade pancromática real sobre a intensidade pseudo pancromática.
 
