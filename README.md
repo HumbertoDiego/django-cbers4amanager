@@ -68,6 +68,12 @@ docker-compose restart
       * python /app/uploads/dj_process_tasks/make_download.py --todos
     * Ou abrindo a tabela `Task Instances` pelo Django-Admin
 9. Após a confecção final da imagem fusionada com resolução espacial de 2m os insumos podem ser deletados para fins de poupar espaço em disco. Para isso, atualize o Status dos itens na tabela `Fusão RGB/PAN` para `Finalizado=True` isso determina a exclusão agendada dos insumos (Downloads, Composições RGB e Recortes) que originaram o arquivo fusiondao. A exclusão tem um agendamento semanal (dom 00:02) por padrão e também exclui os arquivos órfãos, ou seja, cujo nome não esteja listado na tabela `Download`.
+10. Resolvendo downloads parados: Após muitos downloads, o site do INPE passar a sufocar a velocidade a conexão em até 99%. Por exemplo, taxas de transferências de 4 MB/s podem passar para 40 kB/s, inviabilizando a conclusão dos downloads principalmente quando chegam nas imagens Pancromáticas. A solução para esta situação é esperar 5 dias para retomar os downloads.
+    * Em `http://<IP>/admin/process/task/` inativar a *Task* Download
+    * Checar dentre as tarefas sendo executadas a tarefa `python /app/uploads/dj_process_tasks/make_download.py --todos` --> Anotar o PID desta tarefa
+    * `docker-compose exec app kill <PID>`
+    * Em `http://<IP>/admin/process/job/` selecionar e deletar todos registros *Todo minuto*. 
+    * Após 5 dias ativar a *Task* Download
 
 
 
