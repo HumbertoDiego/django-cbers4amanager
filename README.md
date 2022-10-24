@@ -14,7 +14,6 @@ for i=0 to nb_spectral_bands-1:
     output_value[pixel][i] = input_value[pixel][i] * ratio
 ```
 
-
 ## Requisitos
 * Docker: 
   * Windows:
@@ -75,8 +74,6 @@ docker-compose restart
     * Em `http://<IP>/admin/process/job/` selecionar e deletar todos registros *Todo minuto*. 
     * Após 5 dias ativar a *Task* Download
 
-
-
 ## Administração manual pelo SHELL
 
 1. O programa `/app/uploads/dj_process_tasks/make_download.py` é uma cópia de `/app/cbers4amanager/management/make_download.py`. Ele é executado pelo `task`: _Download a Todo minuto_.
@@ -97,8 +94,6 @@ docker-compose restart
 3. A qualquer momento pode-se executá-los através do terminal, por exemplo:
     * `docker-compose exec app bash`
       * **/app#** python cbers4amanager/management/make_composicaorgb.py ID1 ID2 ID3 ...
-
-
 
 ## Administração manual pelo QGIS
 
