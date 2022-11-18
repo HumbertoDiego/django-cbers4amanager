@@ -56,7 +56,7 @@ docker-compose restart
 6. Inserir as urls de download:
     * Pesquisar em [DGI INPE](http://www2.dgi.inpe.br/catalogo/explore) e baixar do carrinho os links (inpe_catalog.txt)
     * Utilizar a opção `Import TXT` para importar as URLS em lote
-7. Para popular `projeto`, `areas de interesse` e `downlodas` com dados amostrais execute: 
+7. Para popular `projeto`, `areas de interesse` e `downloads` com dados amostrais execute: 
     * `docker-compose exec app python cbers4amanager/management/amostra/pop_amostra.py`
 8. Checar as tarefas sendo executadas:
     * `docker-compose exec app ps -auxw`
