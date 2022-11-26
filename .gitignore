@@ -1,8 +1,9 @@
-cbers4amanager/migrations/
-process/migrations/
 uploads/dj_process_tasks/*
 uploads/a/*/*.tif*
 uploads/a/*/*.xml
 __pycache__/
 cbers4amanager/management/pop_processesv2.py
 cbers4amanager/management/proxy_auth.sh
+./cbers4amanager/migrations/
+./process/migrations/
+.dockerignore
