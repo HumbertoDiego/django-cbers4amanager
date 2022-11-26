@@ -33,11 +33,8 @@ for i=0 to nb_spectral_bands-1:
 git init
 git pull https://github.com/HumbertoDiego/django-cbers4amanager
 docker-compose up -d
-docker-compose exec app python manage.py makemigrations
-docker-compose exec app python manage.py migrate
 docker-compose exec app python manage.py createsuperuser
 docker-compose exec app python cbers4amanager/management/pop_processes.py
-docker-compose restart
 ```
 
 ## Fluxo de tabalho
