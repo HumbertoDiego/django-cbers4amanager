@@ -39,7 +39,7 @@ docker-compose exec app python cbers4amanager/management/pop_processes.py
 
 ## Fluxo de tabalho
 
-1. Navegar para a página `http://<IP>/admin`, realizar o LOGIN com as credenciais de superusuário criadas.
+1. Navegar para a página `http://<IP>/admin`, realizar o login com as credenciais de superusuário criadas.
 2. As tabelas estão nomeadas na ordem dos trabalhos.
 
 <img src="pics/fluxo.png" alt="fluxo" style="height:200px;"/>
