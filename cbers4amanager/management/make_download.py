@@ -14,6 +14,8 @@ from django.core.files.base import ContentFile
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.gdal import GDALRaster
 
+import urllib
+
 def set_bounds(d):
 	rst = GDALRaster(d.arquivo, write=False)
 	xmin, ymin, xmax, ymax = rst.extent
@@ -86,6 +88,9 @@ def main(pks):
 					sys.exit(0)
 				except SystemExit:
 					os._exit(0)
+			except urllib.error.URLError:
+				download.url = download.url.replace("www2","www")
+				sucesso = baixar(download)
 			except Exception as e:
 				print("%s"%i,"- PULANDO devido a",e)
 				continue
